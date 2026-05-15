@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Talent Pool Scout</title>
+  <style>
+    :root { color-scheme: light; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #F8F9FB; color: #1A1A2E; min-height: 100vh; font-size: 14px;
+    }
+    .header {
+      background: #fff; border-bottom: 1px solid #E4E7EB;
+      padding: 14px 24px; display: flex; align-items: center; gap: 12px;
+    }
+    .header-icon {
+      width: 38px; height: 38px;
+      background: linear-gradient(135deg, #5B6CF6, #8B5CF6);
+      border-radius: 9px; display: flex; align-items: center; justify-content: center;
+      font-size: 20px; flex-shrink: 0;
+    }
+    .header-text h1 { font-size: 17px; font-weight: 700; }
+    .header-text p  { font-size: 12px; color: #6B7280; margin-top: 1px; }
+    .tabs {
+      display: flex; background: #fff; border-bottom: 1px solid #E4E7EB; padding: 0 24px;
+    }
+    .tab {
+      padding: 10px 18px; font-size: 13px; font-weight: 500; color: #6B7280;
+      cursor: pointer; border-bottom: 2px solid transparent;
+      display: flex; align-items: center; gap: 6px; transition: all 0.15s; user-select: none;
+    }
+    .tab:hover { color: #1A1A2E; }
+    .tab.active { color: #5B6CF6; border-bottom-color: #5B6CF6; font-weight: 600; }
+    .badge { background: #5B6CF6; color: #fff; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 10px; }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: flex; height: calc(100vh - 100px); }
+    .left-col {
+      width: 430px; flex-shrink: 0; background: #fff;
+      border-right: 1px solid #E4E7EB; overflow-y: auto;
+    }
+    .right-col { flex: 1; overflow-y: auto; padding: 20px; background: #F8F9FB; }
+
+    /* ── JD Banner ── */
+    .jd-banner {
+      background: linear-gradient(135deg, #EEF0FE, #F5F0FF);
+      border-bottom: 1px solid #D8DCFE; padding: 16px 20px;
+    }
+    .jd-title {
+      font-size: 13px; font-weight: 700; color: #4046C5;
+      display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+    }
+    .jd-title .pill {
+      background: #5B6CF6; color: #fff; font-size: 10px;
+      font-weight: 700; padding: 2px 8px; border-radius: 20px;
+    }
+    .jd-textarea {
+      width: 100%; height: 100px; padding: 9px 12px;
+      border: 1.5px solid #C7CDFC; border-radius: 8px;
+      font-size: 12px; resize: vertical; outline: none;
+      font-family: inherit; color: #1A1A2E; background: #fff;
+      transition: border-color 0.15s; line-height: 1.5;
+    }
+    .jd-textarea:focus { border-color: #5B6CF6; }
+    .jd-row { display: flex; gap: 8px; margin-top: 8px; align-items: center; }
+    .btn-parse {
+      display: flex; align-items: center; gap: 7px;
+      padding: 8px 16px; background: #5B6CF6; color: #fff;
+      border: none; border-radius: 8px; font-size: 13px; font-weight: 600;
+      cursor: pointer; white-space: nowrap; transition: background 0.15s;
+    }
+    .btn-parse:hover { background: #4046C5; }
+    .parse-hint { font-size: 11px; color: #7C7FBF; }
+    .parse-status {
+      margin-top: 8px; font-size: 12px; border-radius: 7px;
+      padding: 9px 12px; display: none; line-height: 1.5;
+    }
+    .parse-status.success { display: block; background: #ECFDF5; border: 1px solid #A7F3D0; color: #065F46; }
+    .parse-status.warn    { display: block; background: #FFFBEB; border: 1px solid #FDE68A; color: #92400E; }
+    .parse-status.error   { display: block; background: #FEF2F2; border: 1px solid #FECACA; color: #991B1B; }
+
+    /* ── Form ── */
+    .form-area { padding: 18px 20px; }
+    .field { margin-bottom: 16px; }
+    .field label {
+      display: block; font-size: 12px; font-weight: 700; color: #374151;
+      margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .field label .sub { font-weight: 400; text-transform: none; color: #9CA3AF; font-size: 11px; letter-spacing: 0; margin-left: 4px; }
+    input.text-input {
+      width: 100%; padding: 8px 12px; border: 1.5px solid #E4E7EB; border-radius: 8px;
+      font-size: 13px; color: #1A1A2E; background: #fff; outline: none; transition: border-color 0.15s;
+    }
+    input.text-input:focus { border-color: #5B6CF6; }
+    .tag-wrap {
+      min-height: 42px; border: 1.5px solid #E4E7EB; border-radius: 8px;
+      padding: 6px 8px; display: flex; flex-wrap: wrap; gap: 5px;
+      align-items: center; cursor: text; background: #fff; transition: border-color 0.15s;
+    }
+    .tag-wrap:focus-within { border-color: #5B6CF6; }
+    .tag-inner { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+    .tag {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 9px; border-radius: 5px; font-size: 12px; font-weight: 600; white-space: nowrap;
+      animation: tagIn 0.12s ease;
+    }
+    @keyframes tagIn { from { opacity:0; transform:scale(0.8); } to { opacity:1; transform:scale(1); } }
+    .tag.must    { background: #EEF0FE; color: #4046C5; }
+    .tag.good    { background: #ECFDF5; color: #065F46; }
+    .tag.keyword { background: #FFF7ED; color: #92400E; }
+    .tag.loc     { background: #FDF2F8; color: #831843; }
+    .tag.co      { background: #F1F5F9; color: #334155; }
+    .tag-x { cursor: pointer; font-size: 15px; line-height: 1; opacity: 0.45; margin-left: 1px; }
+    .tag-x:hover { opacity: 1; }
+    .tag-input-field {
+      flex: 1; min-width: 100px; border: none; outline: none;
+      font-size: 12px; color: #1A1A2E; background: transparent; padding: 2px 0;
+    }
+    .hint { font-size: 11px; color: #9CA3AF; margin-top: 4px; }
+    .exp-row { display: flex; gap: 8px; align-items: center; }
+    .exp-row input { width: 72px; }
+    .exp-row span  { font-size: 12px; color: #6B7280; }
+    .btn { padding: 9px 18px; border-radius: 8px; border: none; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+    .btn-primary { background: #5B6CF6; color: #fff; }
+    .btn-primary:hover { background: #4046C5; }
+    .btn-ghost  { background: #F3F4F6; color: #374151; }
+    .btn-ghost:hover { background: #E5E7EB; }
+    .btn-linkedin {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 9px 16px; background: #0077B5; color: #fff;
+      border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none;
+    }
+    .btn-linkedin:hover { background: #006097; }
+    .btn-copy {
+      display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px;
+      background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25);
+      color: #fff; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;
+    }
+    .btn-copy:hover { background: rgba(255,255,255,0.22); }
+    .btn-row { display: flex; gap: 8px; margin-top: 4px; }
+    .card { background: #fff; border: 1px solid #E4E7EB; border-radius: 10px; padding: 18px; margin-bottom: 14px; }
+    .card-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #9CA3AF; margin-bottom: 14px; }
+    .signal { display: flex; align-items: flex-start; gap: 12px; padding: 14px; border-radius: 9px; margin-bottom: 14px; }
+    .signal.green  { background: #ECFDF5; border: 1px solid #A7F3D0; }
+    .signal.yellow { background: #FFFBEB; border: 1px solid #FDE68A; }
+    .signal.red    { background: #FEF2F2; border: 1px solid #FECACA; }
+    .signal-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+    .signal.green  .signal-dot { background: #10B981; }
+    .signal.yellow .signal-dot { background: #F59E0B; }
+    .signal.red    .signal-dot { background: #EF4444; }
+    .signal-body strong { display: block; font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+    .signal-body p { font-size: 12px; color: #6B7280; line-height: 1.5; }
+    .bool-box {
+      background: #1E2035; border-radius: 9px; padding: 16px;
+      font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.7;
+      white-space: pre-wrap; word-break: break-word; color: #94A3B8;
+    }
+    .bool-box .op      { color: #F472B6; font-weight: 700; }
+    .bool-box .must-kw { color: #7DD3FC; }
+    .bool-box .good-kw { color: #86EFAC; }
+    .bool-box .co-kw   { color: #C4B5FD; }
+    .bool-box .kw-kw   { color: #FCD34D; }
+    .bool-actions { margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .check-row { display: flex; gap: 10px; align-items: flex-start; padding: 5px 0; font-size: 13px; }
+    .check-row .dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #D1D5DB; flex-shrink: 0; margin-top: 2px; }
+    .check-row.filled .dot { background: #10B981; border-color: #10B981; }
+    .check-row.filled { color: #1A1A2E; }
+    .check-row:not(.filled) { color: #9CA3AF; }
+    .tip-row { display: flex; gap: 10px; font-size: 12px; color: #6B7280; padding: 5px 0; line-height: 1.5; }
+    .notice { padding: 10px 14px; border-radius: 8px; font-size: 12px; line-height: 1.5; margin-top: 12px; }
+    .notice.amber { background: #FFFBEB; border: 1px solid #FDE68A; color: #92400E; }
+    .notice.blue  { background: #EFF6FF; border: 1px solid #BFDBFE; color: #1E40AF; }
+    .empty { text-align: center; padding: 60px 24px; color: #9CA3AF; }
+    .empty .icon { font-size: 48px; margin-bottom: 14px; }
+    .empty p { font-size: 13px; line-height: 1.7; }
+    .history-pane { height: calc(100vh - 100px); overflow-y: auto; padding: 20px 24px; background: #F8F9FB; }
+    .history-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+    .history-card {
+      background: #fff; border: 1.5px solid #E4E7EB; border-radius: 10px;
+      padding: 16px; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .history-card:hover { border-color: #5B6CF6; box-shadow: 0 2px 12px rgba(91,108,246,0.10); }
+    .hc-role { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+    .hc-meta { font-size: 11px; color: #9CA3AF; margin-bottom: 10px; }
+    .hc-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+    .hc-cta  { font-size: 11px; color: #5B6CF6; font-weight: 600; margin-top: 10px; }
+    .section-hdr { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #9CA3AF; margin-bottom: 14px; }
+    .role-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .role-header h2 { font-size: 18px; font-weight: 800; }
+    .role-badge { background: #EEF0FE; color: #4046C5; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-icon">🎯</div>
+  <div class="header-text">
+    <h1>Talent Pool Scout</h1>
+    <p>Check if the talent exists before you open the role &nbsp;·&nbsp; LinkedIn Recruiter</p>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('search')">🔍 New Search</div>
+  <div class="tab" onclick="switchTab('history')">
+    📋 Search History
+    <span class="badge" id="hist-badge" style="display:none">0</span>
+  </div>
+</div>
+
+<!-- ═══ SEARCH PANE ═══ -->
+<div class="tab-pane active" id="pane-search">
+  <div class="left-col">
+
+    <!-- JD Auto-Fill -->
+    <div class="jd-banner">
+      <div class="jd-title">
+        🪄 Auto-fill from Job Description
+        <span class="pill">SMART SCAN</span>
+      </div>
+      <textarea class="jd-textarea" id="jd-text"
+        placeholder="Paste the job description text here (copy from any job site, email, or doc)…"></textarea>
+      <div class="jd-row">
+        <button class="btn-parse" onclick="parseJD()">🪄 Scan &amp; Fill Form</button>
+        <span class="parse-hint">Works offline · no API needed</span>
+      </div>
+      <div class="parse-status" id="parse-status"></div>
+    </div>
+
+    <!-- Manual Form -->
+    <div class="form-area">
+      <div class="field">
+        <label>Role Title <span class="sub">* required</span></label>
+        <input type="text" class="text-input" id="f-role" placeholder="e.g. Senior Data Engineer" />
+      </div>
+      <div class="field">
+        <label>Must-Have Skills <span class="sub">Enter or comma to add</span></label>
+        <div class="tag-wrap" onclick="focusIn('must')">
+          <div class="tag-inner" id="tags-must"></div>
+          <input class="tag-input-field" id="in-must" placeholder="e.g. Python, Apache Spark…" onkeydown="onKey(event,'must')" />
+        </div>
+        <div class="hint">🔴 Joined with AND — every candidate must have ALL of these</div>
+      </div>
+      <div class="field">
+        <label>Good-to-Have Skills <span class="sub">Enter or comma to add</span></label>
+        <div class="tag-wrap" onclick="focusIn('good')">
+          <div class="tag-inner" id="tags-good"></div>
+          <input class="tag-input-field" id="in-good" placeholder="e.g. Airflow, dbt, Kafka…" onkeydown="onKey(event,'good')" />
+        </div>
+        <div class="hint">🟡 Joined with OR — nice to have, not mandatory</div>
+      </div>
+      <div class="field">
+        <label>JD Keywords <span class="sub">Enter or comma to add</span></label>
+        <div class="tag-wrap" onclick="focusIn('kw')">
+          <div class="tag-inner" id="tags-kw"></div>
+          <input class="tag-input-field" id="in-kw" placeholder="e.g. data pipeline, ETL, lakehouse…" onkeydown="onKey(event,'kw')" />
+        </div>
+        <div class="hint">📄 Key phrases that signal strong profile match</div>
+      </div>
+      <div class="field">
+        <label>Target Locations <span class="sub">Enter or comma to add</span></label>
+        <div class="tag-wrap" onclick="focusIn('loc')">
+          <div class="tag-inner" id="tags-loc"></div>
+          <input class="tag-input-field" id="in-loc" placeholder="e.g. Bangalore, Mumbai, Pune…" onkeydown="onKey(event,'loc')" />
+        </div>
+        <div class="hint">💡 Use LinkedIn's Location filter for best results</div>
+      </div>
+      <div class="field">
+        <label>Target Companies <span class="sub">competitors / source companies</span></label>
+        <div class="tag-wrap" onclick="focusIn('co')">
+          <div class="tag-inner" id="tags-co"></div>
+          <input class="tag-input-field" id="in-co" placeholder="e.g. Databricks, Snowflake, AWS…" onkeydown="onKey(event,'co')" />
+        </div>
+      </div>
+      <div class="field">
+        <label>Experience <span class="sub">years</span></label>
+        <div class="exp-row">
+          <input type="text" class="text-input" id="f-exp-min" placeholder="Min" />
+          <span>to</span>
+          <input type="text" class="text-input" id="f-exp-max" placeholder="Max" />
+          <span>years</span>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="generate()">🔍 Generate Search String</button>
+        <button class="btn btn-ghost" onclick="clearAll()">Clear</button>
+      </div>
+    </div>
+
+  </div><!-- /left-col -->
+
+  <div class="right-col">
+    <div class="empty" id="empty-state">
+      <div class="icon">🎯</div>
+      <p><strong>Paste a JD above to auto-fill the form</strong><br>or fill it in manually, then click<br><em>Generate Search String</em></p>
+    </div>
+    <div id="output" style="display:none"></div>
+  </div>
+</div>
+
+<!-- ═══ HISTORY PANE ═══ -->
+<div class="tab-pane" id="pane-history">
+  <div class="history-pane">
+    <div class="section-hdr">Past Searches</div>
+    <div class="history-grid" id="history-grid"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  SKILL DATABASE — covers tech + all non-tech roles
+// ═══════════════════════════════════════════════
+const SKILL_DB = [
+  // ── Tech: Languages ──
+  'Python','Java','JavaScript','TypeScript','C++','C#','Go','Golang','Rust','Ruby','PHP','Scala',
+  'Kotlin','Swift','R','MATLAB','Perl','Shell Scripting','Bash','PowerShell','VBA','Groovy',
+  // ── Tech: Data & ML ──
+  'SQL','NoSQL','PostgreSQL','MySQL','Oracle','SQL Server','Cassandra','Elasticsearch','MongoDB',
+  'Apache Spark','PySpark','Hadoop','Kafka','Apache Kafka','Apache Airflow','dbt','Databricks',
+  'Snowflake','Redshift','BigQuery','Power BI','Tableau','Looker','Grafana','Pandas','NumPy',
+  'Scikit-learn','TensorFlow','PyTorch','MLflow','SageMaker','Delta Lake','ETL','ELT',
+  'Data Warehousing','Data Engineering','Data Science','Machine Learning','Deep Learning',
+  'Natural Language Processing','Computer Vision','Data Governance','Data Quality','Data Pipeline',
+  // ── Tech: Cloud & DevOps ──
+  'AWS','Azure','GCP','Google Cloud','Docker','Kubernetes','Terraform','Ansible','Jenkins',
+  'GitHub Actions','GitLab CI','CircleCI','Helm','Prometheus','Datadog','New Relic','Splunk',
+  'Linux','Unix','CI/CD','DevOps','DevSecOps','Site Reliability Engineering','SRE',
+  'Cloud Architecture','Cloud Migration','Infrastructure as Code',
+  // ── Tech: Web & Mobile ──
+  'React','Angular','Vue.js','Node.js','Django','Flask','FastAPI','Spring Boot','REST API',
+  'GraphQL','Microservices','React Native','Flutter','iOS','Android',
+  // ── Tech: Security ──
+  'SIEM','Penetration Testing','Vulnerability Assessment','OWASP','CISSP','ISO 27001',
+  'GDPR','PCI DSS','Zero Trust','Cybersecurity','Information Security',
+  // ── Tech: QA ──
+  'Selenium','Cypress','Test Automation','Manual Testing','Performance Testing','API Testing',
+  'BDD','TDD','SDET','Quality Assurance',
+  // ── HR & Talent ──
+  'Talent Acquisition','Talent Management','Recruitment','Sourcing','Headhunting',
+  'Executive Search','Campus Hiring','Bulk Hiring','Lateral Hiring','Niche Hiring',
+  'Employer Branding','Employee Engagement','Onboarding','Offboarding',
+  'Performance Management','Learning & Development','L&D','Training & Development',
+  'Succession Planning','Workforce Planning','Org Design','HR Business Partnering','HRBP',
+  'Compensation & Benefits','C&B','Total Rewards','Payroll','HRMS','ATS',
+  'Workday','SuccessFactors','SAP HR','Taleo','Greenhouse','Lever','iCIMS','BambooHR',
+  'Boolean Search','LinkedIn Recruiter','Naukri','Indeed','HR Operations','HR Compliance',
+  'Labour Law','Employment Law','IR','Industrial Relations','HR Analytics',
+  'Diversity & Inclusion','D&I','DEI','Culture Building','Change Management',
+  // ── Finance & Accounting ──
+  'Financial Modelling','Valuation','DCF Analysis','M&A','Mergers & Acquisitions',
+  'Investment Banking','Equity Research','Private Equity','Venture Capital','Portfolio Management',
+  'Risk Management','Credit Analysis','Financial Planning & Analysis','FP&A',
+  'Budgeting','Forecasting','MIS Reporting','Management Reporting','P&L Management',
+  'Cost Accounting','Management Accounting','Statutory Audit','Internal Audit',
+  'Tax Planning','GST','Income Tax','Transfer Pricing','IFRS','Ind AS','GAAP',
+  'SAP FICO','Oracle Financials','Tally','QuickBooks','Zoho Books','Bloomberg','Reuters',
+  'Treasury Management','Cash Flow Management','Working Capital Management',
+  'Financial Reporting','Investor Relations','Due Diligence',
+  // ── Sales & Business Development ──
+  'B2B Sales','B2C Sales','Enterprise Sales','SaaS Sales','Inside Sales','Field Sales',
+  'Channel Sales','Partner Management','Key Account Management','Account Management',
+  'Business Development','Lead Generation','Pipeline Management','CRM',
+  'Salesforce','HubSpot','Zoho CRM','Revenue Operations','Sales Operations',
+  'Consultative Selling','Solution Selling','Negotiation','Client Relationship Management',
+  'Upselling','Cross-selling','Go-to-Market Strategy','Revenue Growth','Quota Achievement',
+  // ── Marketing ──
+  'Brand Management','Digital Marketing','Performance Marketing','Content Marketing',
+  'SEO','SEM','PPC','Google Ads','Meta Ads','LinkedIn Ads','Programmatic Advertising',
+  'Social Media Marketing','Influencer Marketing','Email Marketing','Marketing Automation',
+  'HubSpot','Marketo','Salesforce Marketing Cloud','Google Analytics','Adobe Analytics',
+  'Campaign Management','Trade Marketing','BTL','ATL','PR','Public Relations',
+  'Market Research','Consumer Insights','Product Marketing','Growth Marketing',
+  'Demand Generation','Lead Nurturing','Marketing Analytics','Brand Strategy',
+  'Visual Merchandising','Retail Marketing','Category Management',
+  // ── Operations & Supply Chain ──
+  'Supply Chain Management','Procurement','Strategic Sourcing','Vendor Management',
+  'Inventory Management','Demand Planning','Supply Planning','S&OP',
+  'Logistics','Warehouse Management','3PL','Freight','Last Mile Delivery',
+  'SAP SCM','SAP MM','Oracle SCM','ERP','SAP','Oracle ERP','Manufacturing',
+  'Lean Manufacturing','Six Sigma','Kaizen','5S','TPM','Quality Management',
+  'ISO 9001','Process Improvement','Operations Management','Plant Management',
+  'Production Planning','Capacity Planning','MRP','Business Process Management',
+  // ── Legal & Compliance ──
+  'Corporate Law','Contract Management','Contract Drafting','Legal Research',
+  'Litigation','Arbitration','Intellectual Property','IP Law','Patent','Trademark',
+  'Regulatory Compliance','SEBI','RBI Regulations','Company Law','MCA Filings',
+  'Labour Law Compliance','Legal Due Diligence','M&A Legal','FEMA','PMLA',
+  // ── Customer Success & Support ──
+  'Customer Success','Account Management','Customer Retention','Churn Management',
+  'NPS','CSAT','Customer Experience','CX','Zendesk','Freshdesk','ServiceNow',
+  'Customer Onboarding','Renewal Management','Upsell','Cross-sell','SLA Management',
+  'Technical Support','L1 Support','L2 Support','Helpdesk','ITIL',
+  // ── Product Management ──
+  'Product Management','Product Strategy','Product Roadmap','Product Discovery',
+  'User Stories','Backlog Management','A/B Testing','Hypothesis Testing',
+  'Product Analytics','Funnel Optimization','Growth Hacking','OKRs',
+  'Go-to-Market','Competitive Analysis','Market Research','Voice of Customer',
+  'Agile','Scrum','Kanban','JIRA','Confluence','Figma','Wireframing',
+  // ── Design ──
+  'UI Design','UX Design','Interaction Design','Visual Design',
+  'Figma','Sketch','Adobe XD','InVision','Zeplin',
+  'User Research','Usability Testing','Design Systems','Motion Design',
+  'Adobe Photoshop','Adobe Illustrator','After Effects','Premiere Pro',
+  // ── Analytics & Research ──
+  'Business Analysis','Data Analysis','Statistical Analysis','Market Research',
+  'Consumer Research','Qualitative Research','Quantitative Research',
+  'Excel','Advanced Excel','Power BI','Tableau','Google Analytics',
+  'SPSS','SAS','Hypothesis Testing','Regression Analysis',
+  // ── Project & Programme Management ──
+  'Project Management','Programme Management','PMP','PRINCE2','PMO',
+  'Agile','Waterfall','Risk Management','Stakeholder Management',
+  'Budget Management','Resource Planning','MS Project','JIRA',
+  'Change Management','SAFe','Lean','Six Sigma',
+  // ── Healthcare ──
+  'Clinical Research','Pharmacovigilance','Medical Affairs','Regulatory Affairs',
+  'Drug Safety','Clinical Trials','GCP','GMP','FDA','CDSCO',
+  'Healthcare IT','Electronic Health Records','EHR','EMR','NABH','JCI',
+  'Hospital Administration','Nursing','Medical Coding','ICD','CPT',
+  // ── Education & Training ──
+  'Curriculum Design','Instructional Design','E-Learning','LMS','Articulate',
+  'Training Delivery','Facilitation','Coaching','Mentoring','Academic Research',
+  // ── Real Estate ──
+  'Real Estate','Property Management','Lease Management','RERA','Title Search',
+  'Valuation','Site Acquisition','Construction Management','Project Development',
+  // ── Retail & FMCG ──
+  'Retail Operations','Store Management','Merchandising','Category Management',
+  'Planogram','Trade Marketing','Distributor Management','Channel Management',
+  'GT','General Trade','MT','Modern Trade','E-commerce','Quick Commerce',
+  // ── Media & Content ──
+  'Content Writing','Copywriting','Journalism','Editorial','Video Production',
+  'Scriptwriting','Social Media','Community Management','Podcasting',
+  // ── Consulting ──
+  'Management Consulting','Strategy Consulting','Business Strategy',
+  'Problem Solving','Structured Thinking','Client Management','Presentation Skills',
+  'PowerPoint','Excel Modelling','Research & Analysis','Workshop Facilitation',
+  // ── General Professional ──
+  'Communication','Stakeholder Management','Cross-functional Collaboration',
+  'Leadership','Team Management','People Management','Analytical Thinking',
+  'Critical Thinking','Negotiation','Presentation','Written Communication',
+  'Excel','MS Office','Google Workspace'
+].sort((a, b) => b.length - a.length); // longest first prevents partial matches
+
+// ─── Experience patterns ───
+const EXP_PATTERNS = [
+  /(\d+)\s*[-–to]+\s*(\d+)\s*(?:\+)?\s*years?/i,
+  /(\d+)\+\s*years?\s*(?:of\s+)?(?:relevant\s+)?(?:experience|exp)/i,
+  /minimum\s+(?:of\s+)?(\d+)\s*years?/i,
+  /at\s+least\s+(\d+)\s*years?/i,
+  /(\d+)\s*years?\s*(?:of\s+)?(?:relevant|industry|total|overall|work|professional)?\s*experience/i,
+];
+
+// ─── Locations ───
+const LOCATIONS = [
+  'Bangalore','Bengaluru','Mumbai','Delhi','NCR','New Delhi','Hyderabad','Chennai','Pune',
+  'Noida','Gurgaon','Gurugram','Kolkata','Ahmedabad','Chandigarh','Jaipur','Kochi','Coimbatore',
+  'Nagpur','Indore','Lucknow','Surat','Bhopal','Vadodara','Vizag','Visakhapatnam','Thiruvananthapuram',
+  'India','Remote','Hybrid','Work from Home','WFH','Pan India','Anywhere in India',
+  'Singapore','Dubai','Abu Dhabi','Riyadh','London','New York','San Francisco',
+  'Seattle','Toronto','Sydney','Berlin','Amsterdam','Tokyo','Hong Kong','Kuala Lumpur',
+];
+
+// ─── Section header patterns (must-have vs nice-to-have) ───
+const MUST_SECTION_RX = /(?:requirement[s]?|qualification[s]?|what\s+you(?:'ll|'re|\s+will)?\s+(?:need|bring|have)|must[\s-]have|essential|minimum\s+qualification[s]?|we(?:'re|\s+are)\s+looking\s+for|what\s+we(?:'re|\s+are)\s+looking\s+for|skills?\s+(?:required|needed)|key\s+skills?|technical\s+skills?|mandatory)[:\s]*\n/gi;
+
+const NICE_SECTION_RX = /(?:preferred|nice[\s-]to[\s-]have|good[\s-]to[\s-]have|bonus|desirable|additional\s+(?:skills?|qualification[s]?)|would\s+be\s+(?:a\s+)?(?:plus|bonus|advantage)|advantageous)[:\s]*\n/gi;
+
+// ─── Noise prefixes to strip from bullet lines ───
+const NOISE_RX = [
+  /^\d+\+?\s*(?:to\s*\d+\s*)?years?\s+(?:of\s+)?(?:experience|exp)(?:\s+(?:in|with|of|using))?\s*/i,
+  /^(?:strong|excellent|good|solid|proven|demonstrated?|deep|in[\s-]depth|hands[\s-]on|working|thorough|sound|expert|advanced|basic|working)\s+(?:knowledge|understanding|expertise|experience|command|grasp|proficiency|familiarity|background)\s+(?:of|in|with|using)?\s*/i,
+  /^(?:experience|expertise|background|proficiency|knowledge|understanding|expertise)\s+(?:with|in|of|using|on)?\s*/i,
+  /^(?:proven\s+)?(?:track\s+record|experience)\s+(?:of|in)?\s*/i,
+  /^(?:familiarity|familiar)\s+with\s*/i,
+  /^(?:proficient|proficiency)\s+(?:in|with)\s*/i,
+  /^(?:ability|able)\s+to\s+/i,
+  /^(?:must\s+have|should\s+have|should\s+be|must\s+be)\s+/i,
+  /^(?:hands[\s-]on|practical)\s+experience\s+(?:with|in|on)?\s*/i,
+  /^(?:exposure\s+to|exposure\s+in)\s*/i,
+  /^(?:skilled\s+in|skilled\s+at)\s*/i,
+  /^(?:working\s+knowledge\s+of)\s*/i,
+  /^(?:understanding\s+of)\s*/i,
+  /^(?:well[\s-]versed\s+in)\s*/i,
+  /^(?:demonstrable|demonstrable\s+experience\s+(?:in|with))?\s*/i,
+];
+
+// ═══════════════════════════════════════════════
+//  BULLET EXTRACTOR — works for any role type
+// ═══════════════════════════════════════════════
+function extractBullets(sectionText) {
+  const results = [];
+  const lines = sectionText.split('\n');
+  for (const line of lines) {
+    // Match lines starting with bullet chars or numbers
+    const stripped = line.replace(/^[\s•–—\-\*\•\→\►\▸\▪\◦\◆\✓\✔\☑\·\–]+\s*/, '')
+                         .replace(/^\d+[\.\)]\s+/, '').trim();
+    if (stripped.length > 5 && stripped.length < 150) {
+      results.push(stripped);
+    }
+  }
+  return results;
+}
+
+function bulletToSkill(raw) {
+  let s = raw.trim();
+  // Skip anything containing a URL
+  if (/https?:\/\//i.test(s)) return null;
+  // Strip noise prefixes
+  for (const rx of NOISE_RX) s = s.replace(rx, '');
+  s = s.trim();
+  // Take only up to the first clause separator
+  s = s.split(/[,;]|\s+(?:and|or)\s+/i)[0].trim();
+  // Trim to 4 words max (keeps it tag-friendly)
+  const words = s.split(/\s+/);
+  if (words.length > 5) s = words.slice(0, 4).join(' ');
+  // Remove trailing punctuation
+  s = s.replace(/[.:!?()\[\]]+$/, '').trim();
+  // Skip lines that are just verbs or too vague
+  const SKIP = /^(?:manage|work|ensure|support|drive|lead|build|develop|create|maintain|help|assist|provide|conduct|review|prepare|handle|coordinate|communicate|collaborate|partner|own|define|execute|analyse|analyze|monitor|report|improve|design|implement|establish|identify|deliver|oversee|facilitate|engage|demonstrate|participate|contribute|achieve)[\s\b]/i;
+  if (SKIP.test(s) || s.length < 3) return null;
+  // Title-case if all lowercase
+  if (s === s.toLowerCase()) s = s.replace(/\b\w/g, c => c.toUpperCase());
+  return s.length >= 3 ? s : null;
+}
+
+function findSectionRange(text, sectionRx) {
+  sectionRx.lastIndex = 0;
+  const m = sectionRx.exec(text);
+  if (!m) return null;
+  const start = m.index + m[0].length;
+  // Section ends at next blank line followed by a header-like line, or end of text
+  const rest = text.slice(start);
+  const endMatch = rest.match(/\n\n(?=[A-Z]|\d\.)/);
+  const end = endMatch ? start + endMatch.index + 2 : text.length;
+  return text.slice(start, end);
+}
+
+// ═══════════════════════════════════════════════
+//  JD SCANNER — universal, no API needed
+// ═══════════════════════════════════════════════
+function parseJD() {
+  const text = document.getElementById('jd-text').value.trim();
+  if (!text || text.length < 50) {
+    showStatus('error', '⚠️ Please paste a job description first (at least a few lines).');
+    return;
+  }
+
+  // ── Detect if a URL was pasted instead of JD text ──
+  const looksLikeUrl = /^https?:\/\//i.test(text) ||
+    (text.split('\n').filter(l => l.trim()).length <= 4 && /https?:\/\//i.test(text));
+  if (looksLikeUrl) {
+    showStatus('error',
+      '⚠️ That\'s a link, not a job description. To use this feature:<br>' +
+      '<strong>1.</strong> Open the job link in your browser &nbsp;' +
+      '<strong>2.</strong> Select all text on the page (Ctrl+A / Cmd+A) &nbsp;' +
+      '<strong>3.</strong> Copy and paste it here'
+    );
+    return;
+  }
+
+  const lower = text.toLowerCase();
+  const lines = text.split('\n');
+
+  // ── 1. Role title ──
+  let roleTitle = '';
+  const titleRx = /(?:job\s+title|position|role|hiring\s+for|looking\s+for)[:\s]+([A-Z][^\n]{3,60})/i;
+  const tm = text.match(titleRx);
+  if (tm) {
+    roleTitle = tm[1].trim().replace(/[:\-–|•]+$/, '').trim();
+  } else {
+    // First non-empty short line that looks like a title
+    for (const line of lines) {
+      const l = line.trim();
+      if (l.length > 4 && l.length < 80 && /[A-Z]/.test(l[0]) && !l.endsWith('.') && !l.includes('http')) {
+        roleTitle = l; break;
+      }
+    }
+  }
+
+  // ── 2. Experience ──
+  let expMin = '', expMax = '';
+  for (const pat of EXP_PATTERNS) {
+    const m = text.match(pat);
+    if (m) {
+      if (m[2]) { expMin = m[1]; expMax = m[2]; }
+      else       { expMin = m[1]; expMax = String(Math.min(parseInt(m[1]) + 4, parseInt(m[1]) * 2)); }
+      break;
+    }
+  }
+
+  // ── 3. Find must / nice sections ──
+  const mustSectionText = findSectionRange(text, MUST_SECTION_RX);
+  const niceSectionText = findSectionRange(text, NICE_SECTION_RX);
+
+  // ── 4a. Skill DB scan ──
+  // Split text at the nice-to-have boundary for context
+  let niceBoundary = text.length;
+  NICE_SECTION_RX.lastIndex = 0;
+  const nb = NICE_SECTION_RX.exec(text);
+  if (nb) niceBoundary = nb.index;
+  const mustZone = text.slice(0, niceBoundary);
+  const niceZone = text.slice(niceBoundary);
+
+  const dbMust = new Set(), dbGood = new Set();
+  for (const skill of SKILL_DB) {
+    const rx = new RegExp('\\b' + skill.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i');
+    if (rx.test(mustZone)) dbMust.add(skill);
+    else if (rx.test(niceZone)) dbGood.add(skill);
+  }
+
+  // ── 4b. Bullet extraction (universal fallback) ──
+  const bulletMust = [], bulletGood = [];
+  if (mustSectionText) {
+    extractBullets(mustSectionText).forEach(b => {
+      const s = bulletToSkill(b); if (s) bulletMust.push(s);
+    });
+  }
+  if (niceSectionText) {
+    extractBullets(niceSectionText).forEach(b => {
+      const s = bulletToSkill(b); if (s) bulletGood.push(s);
+    });
+  }
+  // If no named sections found, try whole-text bullet extraction
+  if (!mustSectionText && !niceSectionText) {
+    extractBullets(text).forEach(b => {
+      const s = bulletToSkill(b); if (s) bulletMust.push(s);
+    });
+  }
+
+  // ── 5. Merge: DB results take priority, bullets fill the gaps ──
+  function dedup(arr) {
+    const seen = new Set(), out = [];
+    for (const s of arr) {
+      const key = s.toLowerCase();
+      if (!seen.has(key)) { seen.add(key); out.push(s); }
+    }
+    return out;
+  }
+
+  // Merge DB + bullet results
+  let mustArr = dedup([...dbMust, ...bulletMust.filter(b => ![...dbMust].some(d => d.toLowerCase() === b.toLowerCase()))]);
+  let goodArr = dedup([...dbGood, ...bulletGood.filter(b => ![...dbGood].some(d => d.toLowerCase() === b.toLowerCase()))]);
+
+  // Remove good items that also appear in must
+  goodArr = goodArr.filter(g => !mustArr.some(m => m.toLowerCase() === g.toLowerCase()));
+
+  // Balance: if must > 6, move excess to good
+  if (mustArr.length > 6) {
+    goodArr = [...mustArr.slice(6), ...goodArr].slice(0, 8);
+    mustArr = mustArr.slice(0, 6);
+  }
+  mustArr = mustArr.slice(0, 6);
+  goodArr = goodArr.slice(0, 8);
+
+  // ── 6. Keywords from common role-agnostic patterns ──
+  const KW_PATTERNS = [
+    /(?:data\s+(?:pipeline|warehouse|lake|mesh|platform|engineering|science|analytics))/gi,
+    /(?:machine\s+learning|deep\s+learning|artificial\s+intelligence|generative\s+AI)/gi,
+    /(?:cloud\s+(?:native|infrastructure|architecture|migration))/gi,
+    /(?:ci\/cd|continuous\s+integration|continuous\s+delivery)/gi,
+    /(?:agile|scrum|kanban)\s+(?:methodology|framework|delivery)/gi,
+    /(?:stakeholder\s+management|cross[\s-]functional\s+(?:teams?|collaboration))/gi,
+    /(?:talent\s+acquisition|employer\s+branding|workforce\s+planning)/gi,
+    /(?:revenue\s+(?:generation|growth|operations)|pipeline\s+management)/gi,
+    /(?:financial\s+(?:modelling|planning|reporting|analysis)|P&L\s+management)/gi,
+    /(?:supply\s+chain\s+(?:management|optimization)|demand\s+planning)/gi,
+    /(?:customer\s+success|customer\s+experience|customer\s+retention)/gi,
+    /(?:product\s+(?:roadmap|strategy|discovery|led\s+growth))/gi,
+    /(?:brand\s+(?:management|strategy|building))/gi,
+    /(?:regulatory\s+(?:compliance|affairs)|statutory\s+compliance)/gi,
+    /(?:change\s+management|organizational\s+(?:change|transformation))/gi,
+    /(?:high[\s-]performance\s+(?:teams?|culture)|performance\s+management)/gi,
+    /(?:full[\s-]cycle\s+recruiting|end[\s-]to[\s-]end\s+recruitment)/gi,
+    /(?:go[\s-]to[\s-]market|GTM\s+strategy)/gi,
+    /(?:mergers?\s+(?:and|&)\s+acquisitions?|M&A)/gi,
+    /(?:operational\s+excellence|process\s+(?:improvement|optimization))/gi,
+  ];
+  const keywords = new Set();
+  for (const rx of KW_PATTERNS) {
+    for (const m of text.matchAll(rx)) {
+      keywords.add(m[0].trim().replace(/\s+/g, ' '));
+      if (keywords.size >= 5) break;
+    }
+    if (keywords.size >= 5) break;
+  }
+  const kwArr = [...keywords].slice(0, 5);
+
+  // ── 7. Locations ──
+  const locArr = [];
+  for (const loc of LOCATIONS) {
+    const rx = new RegExp('\\b' + loc.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i');
+    if (rx.test(text)) locArr.push(loc);
+  }
+
+  // ── 8. Fill the form ──
+  if (roleTitle) document.getElementById('f-role').value = roleTitle;
+  if (expMin)    document.getElementById('f-exp-min').value = expMin;
+  if (expMax)    document.getElementById('f-exp-max').value = expMax;
+
+  S.must = mustArr;        renderTags('must');
+  S.good = goodArr;        renderTags('good');
+  S.kw   = kwArr;          renderTags('kw');
+  S.loc  = locArr.slice(0,4); renderTags('loc');
+
+  const total = mustArr.length + goodArr.length + kwArr.length + locArr.length;
+  const parts = [];
+  if (mustArr.length) parts.push(`<strong>${mustArr.length} must-have skills</strong>`);
+  if (goodArr.length) parts.push(`${goodArr.length} good-to-have`);
+  if (kwArr.length)   parts.push(`${kwArr.length} keywords`);
+  if (locArr.length)  parts.push(`${locArr.length} locations`);
+
+  if (total === 0) {
+    // Absolute last resort — still fill what we can
+    showStatus('warn',
+      `⚠️ The JD format was unusual and auto-detection found very little. Role title${roleTitle?' "'+roleTitle+'"':''} was set. Please add the key skills manually in the fields below — the rest of the tool works perfectly once you do.`
+    );
+  } else {
+    showStatus('success',
+      `✅ Scanned JD — found ${parts.join(', ')}. Review the tags below, remove anything that doesn't fit, add target companies, then click Generate.`
+    );
+  }
+}
+
+function showStatus(type, msg) {
+  const el = document.getElementById('parse-status');
+  el.className = 'parse-status ' + type;
+  el.innerHTML = msg;
+}
+
+// ═══════════════════════════════════════════════
+//  STATE & TAG INPUTS
+// ═══════════════════════════════════════════════
+const S = { must:[], good:[], kw:[], loc:[], co:[] };
+const COLORS = { must:'must', good:'good', kw:'keyword', loc:'loc', co:'co' };
+
+function focusIn(t) { document.getElementById('in-'+t).focus(); }
+
+function onKey(e, t) {
+  const el = e.target;
+  if (e.key === 'Enter' || e.key === ',') {
+    e.preventDefault();
+    const v = el.value.replace(/,/g,'').trim();
+    if (v) addTag(t, v);
+    el.value = '';
+  } else if (e.key === 'Backspace' && !el.value && S[t].length) {
+    removeTag(t, S[t].length - 1);
+  }
+}
+
+function addTag(t, val) {
+  if (!S[t].includes(val)) { S[t].push(val); renderTags(t); }
+}
+function removeTag(t, i) { S[t].splice(i, 1); renderTags(t); }
+
+function renderTags(t) {
+  const c = document.getElementById('tags-'+t);
+  c.innerHTML = '';
+  S[t].forEach((v,i) => {
+    const s = document.createElement('span');
+    s.className = 'tag ' + COLORS[t];
+    s.innerHTML = `${esc(v)} <span class="tag-x" onclick="removeTag('${t}',${i})">×</span>`;
+    c.appendChild(s);
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  BOOLEAN BUILDER
+// ═══════════════════════════════════════════════
+function buildBoolean() {
+  const parts = [];
+  if (S.must.length) parts.push(S.must.map(s=>`"${s}"`).join(' AND '));
+  if (S.good.length) parts.push('(' + S.good.map(s=>`"${s}"`).join(' OR ') + ')');
+  if (S.kw.length)   parts.push('(' + S.kw.map(s=>`"${s}"`).join(' OR ') + ')');
+  if (S.co.length)   parts.push('(' + S.co.map(s=>`"${s}"`).join(' OR ') + ')');
+  return parts.join('\n\nAND\n\n');
+}
+
+function buildColoredBoolean() {
+  const w  = (cls, t) => `<span class="${cls}">${esc(t)}</span>`;
+  const OP = t => `<span class="op">${t}</span>`;
+  const parts = [];
+  if (S.must.length) parts.push(S.must.map(s=>w('must-kw',`"${s}"`)).join(' '+OP('AND')+' '));
+  if (S.good.length) parts.push('(' + S.good.map(s=>w('good-kw',`"${s}"`)).join(' '+OP('OR')+' ') + ')');
+  if (S.kw.length)   parts.push('(' + S.kw.map(s=>w('kw-kw',  `"${s}"`)).join(' '+OP('OR')+' ') + ')');
+  if (S.co.length)   parts.push('(' + S.co.map(s=>w('co-kw',  `"${s}"`)).join(' '+OP('OR')+' ') + ')');
+  return parts.join('\n\n'+OP('AND')+'\n\n');
+}
+
+function getSignal() {
+  const n = S.must.length;
+  if (n <= 3) return { cls:'green',  title:'🟢 Healthy pool expected',  body:`Only ${n} must-have skill${n>1?'s':''} — this should return a solid candidate pool. Safe to open the role.` };
+  if (n <= 5) return { cls:'yellow', title:'🟡 Pool may be moderate',   body:`${n} must-haves narrows the field. Run the search first — if results are under 100, move 1–2 skills to Good-to-Have.` };
+  return       { cls:'red',    title:'🔴 Pool likely too narrow', body:`${n} required skills is very specific. Consider relaxing some to Good-to-Have — too many hard requirements makes sourcing very difficult.` };
+}
+
+// ═══════════════════════════════════════════════
+//  GENERATE
+// ═══════════════════════════════════════════════
+function generate() {
+  const role = document.getElementById('f-role').value.trim();
+  if (!role)         { alert('Please enter a Role Title.'); return; }
+  if (!S.must.length){ alert('Please add at least one Must-Have skill.'); return; }
+
+  const expMin = document.getElementById('f-exp-min').value.trim();
+  const expMax = document.getElementById('f-exp-max').value.trim();
+  const sig    = getSignal();
+  const liUrl  = `https://www.linkedin.com/recruiter/search?keywords=${encodeURIComponent(S.must.slice(0,3).join(' '))}`;
+
+  const rows = [
+    { label:'Role',             value: role,                             done:true },
+    { label:'Must-Have Skills', value: S.must.join(', '),                done:S.must.length>0 },
+    { label:'Good-to-Have',     value: S.good.join(', ') || '—',         done:S.good.length>0 },
+    { label:'JD Keywords',      value: S.kw.join(', ')   || '—',         done:S.kw.length>0   },
+    { label:'Locations',        value: S.loc.join(', ')  || 'Not set',   done:S.loc.length>0  },
+    { label:'Target Companies', value: S.co.join(', ')   || '—',         done:S.co.length>0   },
+  ];
+  if (expMin||expMax) rows.push({ label:'Experience', value:`${expMin||'0'}–${expMax||'∞'} years`, done:true });
+
+  const checkHtml = rows.map(r=>`
+    <div class="check-row ${r.done?'filled':''}">
+      <div class="dot"></div>
+      <div><strong>${r.label}:</strong> ${esc(r.value)}</div>
+    </div>`).join('');
+
+  const steps = [
+    'Go to <strong>LinkedIn Recruiter → Search</strong>',
+    'Paste the boolean string below into the <strong>Keywords</strong> field',
+    S.loc.length ? `Set <strong>Location</strong> filter to: ${S.loc.map(l=>`<em>${l}</em>`).join(', ')}` : null,
+    'Check the <strong>result count</strong> — that\'s your talent pool size',
+    'If count &lt; 50, relax some must-haves or widen locations',
+    'Screenshot the count and share with the hiring manager',
+  ].filter(Boolean).map((s,i)=>`<div class="tip-row"><span style="font-weight:700;color:#5B6CF6">${i+1}.</span><span>${s}</span></div>`).join('');
+
+  const html = `
+    <div class="role-header">
+      <h2>${esc(role)}</h2>
+      ${expMin||expMax?`<span class="role-badge">⏱ ${expMin||'0'}–${expMax||'∞'} yrs</span>`:''}
+    </div>
+    <div class="signal ${sig.cls}">
+      <div class="signal-dot"></div>
+      <div class="signal-body"><strong>${sig.title}</strong><p>${sig.body}</p></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Search Summary</div>${checkHtml}
+    </div>
+    <div class="card">
+      <div class="card-title">LinkedIn Recruiter Boolean String</div>
+      <p style="font-size:12px;color:#6B7280;margin-bottom:10px">Copy this into the <strong>Keywords</strong> field in LinkedIn Recruiter</p>
+      <div class="bool-box" id="bool-box">${buildColoredBoolean()}</div>
+      <div class="bool-actions">
+        <a href="${liUrl}" target="_blank" class="btn-linkedin">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="white"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+          Open LinkedIn Recruiter
+        </a>
+        <button class="btn-copy" onclick="copyBool()">📋 Copy String</button>
+      </div>
+      ${S.loc.length?`<div class="notice amber">💡 <strong>Location tip:</strong> Use LinkedIn Recruiter's <strong>Location filter</strong> for <em>${S.loc.join(', ')}</em> — don't include it in the keyword box.</div>`:''}
+    </div>
+    <div class="card">
+      <div class="card-title">How to use in LinkedIn Recruiter</div>${steps}
+      <div class="notice blue" style="margin-top:12px"><strong>Under 50</strong> = very tight pool · <strong>50–200</strong> = moderate · <strong>200+</strong> = healthy. Use this count to decide whether to open the role.</div>
+    </div>`;
+
+  document.getElementById('empty-state').style.display = 'none';
+  const out = document.getElementById('output');
+  out.style.display = 'block';
+  out.innerHTML = html;
+
+  saveSearch(role, buildBoolean(), expMin, expMax);
+}
+
+// ═══════════════════════════════════════════════
+//  COPY
+// ═══════════════════════════════════════════════
+function copyBool() {
+  const text = document.getElementById('bool-box').innerText;
+  const fb = () => { const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); };
+  (navigator.clipboard ? navigator.clipboard.writeText(text).catch(fb) : Promise.resolve(fb()))
+    .then(()=>{ document.querySelectorAll('.btn-copy').forEach(b=>{ b.textContent='✅ Copied!'; setTimeout(()=>b.textContent='📋 Copy String',2000); }); });
+}
+
+// ═══════════════════════════════════════════════
+//  HISTORY
+// ═══════════════════════════════════════════════
+function getHistory() { try { return JSON.parse(localStorage.getItem('tps_v2')||'[]'); } catch { return []; } }
+
+function saveSearch(role, boolStr, expMin, expMax) {
+  const h = getHistory();
+  h.unshift({ id:Date.now(), role, boolStr, expMin, expMax,
+    date: new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}),
+    must:[...S.must], good:[...S.good], kw:[...S.kw], loc:[...S.loc], co:[...S.co] });
+  if (h.length>30) h.pop();
+  localStorage.setItem('tps_v2', JSON.stringify(h));
+  updateBadge();
+}
+
+function updateBadge() {
+  const n = getHistory().length, b = document.getElementById('hist-badge');
+  if (n>0) { b.style.display='inline'; b.textContent=n; }
+}
+
+function renderHistory() {
+  const h = getHistory(), g = document.getElementById('history-grid');
+  if (!h.length) { g.innerHTML='<div class="empty" style="grid-column:1/-1"><div class="icon">📋</div><p>No searches yet.</p></div>'; return; }
+  g.innerHTML = h.map(item=>`
+    <div class="history-card" onclick="loadHistory(${item.id})">
+      <div class="hc-role">${esc(item.role)}</div>
+      <div class="hc-meta">📅 ${item.date}${item.expMin||item.expMax?` · ⏱ ${item.expMin||0}–${item.expMax||'∞'} yrs`:''}</div>
+      <div class="hc-tags">
+        ${(item.must||[]).map(s=>`<span class="tag must">${esc(s)}</span>`).join('')}
+        ${(item.good||[]).slice(0,3).map(s=>`<span class="tag good">${esc(s)}</span>`).join('')}
+        ${(item.loc||[]).slice(0,2).map(s=>`<span class="tag loc">${esc(s)}</span>`).join('')}
+      </div>
+      <div class="hc-cta">Click to reload →</div>
+    </div>`).join('');
+}
+
+function loadHistory(id) {
+  const item = getHistory().find(h=>h.id===id);
+  if (!item) return;
+  ['must','good','kw','loc','co'].forEach(t=>{ S[t]=[...(item[t]||[])]; renderTags(t); });
+  document.getElementById('f-role').value    = item.role;
+  document.getElementById('f-exp-min').value = item.expMin||'';
+  document.getElementById('f-exp-max').value = item.expMax||'';
+  switchTab('search');
+  generate();
+}
+
+// ═══════════════════════════════════════════════
+//  CLEAR / TABS / UTIL
+// ═══════════════════════════════════════════════
+function clearAll() {
+  ['must','good','kw','loc','co'].forEach(t=>{ S[t]=[]; renderTags(t); });
+  ['f-role','f-exp-min','f-exp-max'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('jd-text').value = '';
+  document.getElementById('parse-status').className = 'parse-status';
+  document.getElementById('empty-state').style.display = 'block';
+  document.getElementById('output').style.display = 'none';
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  if (name==='search') {
+    document.querySelector('.tab:nth-child(1)').classList.add('active');
+    document.getElementById('pane-search').classList.add('active');
+  } else {
+    document.querySelector('.tab:nth-child(2)').classList.add('active');
+    document.getElementById('pane-history').classList.add('active');
+    renderHistory();
+  }
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+updateBadge();
+</script>
+</body>
+</html>
