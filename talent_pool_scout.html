@@ -189,6 +189,20 @@
     .role-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
     .role-header h2 { font-size: 18px; font-weight: 800; }
     .role-badge { background: #EEF0FE; color: #4046C5; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+
+    /* ─── Phase 2: Log Result ─── */
+    .log-row { display: flex; gap: 10px; align-items: center; margin-bottom: 4px; }
+    .log-row input[type=number] { width: 130px; padding: 8px 12px; border: 1.5px solid #E4E7EB; border-radius: 8px; font-size: 14px; font-weight: 700; color: #1A1A2E; outline: none; transition: border-color 0.15s; }
+    .log-row input[type=number]:focus { border-color: #5B6CF6; }
+    .log-row input[type=number].error { border-color: #EF4444; }
+    .result-signal { margin-top: 14px; }
+    .result-signal .signal { margin-bottom: 10px; }
+    .result-count-badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
+    .result-count-badge.green  { background: #ECFDF5; color: #065F46; }
+    .result-count-badge.yellow { background: #FFFBEB; color: #92400E; }
+    .result-count-badge.red    { background: #FEF2F2; color: #991B1B; }
+    .btn-report { display: inline-flex; align-items: center; gap: 7px; padding: 9px 18px; background: #1A1A2E; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+    .btn-report:hover { background: #374151; }
   </style>
 </head>
 <body>
@@ -858,7 +872,15 @@ function generate() {
     </div>
     <div class="card">
       <div class="card-title">How to use in LinkedIn Recruiter</div>${steps}
-      <div class="notice blue" style="margin-top:12px"><strong>Under 50</strong> = very tight pool · <strong>50–200</strong> = moderate · <strong>200+</strong> = healthy. Use this count to decide whether to open the role.</div>
+    </div>
+    <div class="card" style="border-color:#5B6CF6;background:linear-gradient(135deg,#FAFAFE,#F5F4FF)">
+      <div class="card-title" style="color:#5B6CF6">📊 Step 2 — Log Your LinkedIn Result</div>
+      <p style="font-size:12px;color:#6B7280;margin-bottom:12px">After running the search, enter the total number of candidates LinkedIn Recruiter shows at the top of the results page.</p>
+      <div class="log-row">
+        <input type="number" id="result-count" placeholder="e.g. 847" min="0" />
+        <button class="btn btn-primary" onclick="logResult()">📊 Log &amp; Assess</button>
+      </div>
+      <div class="result-signal" id="result-signal"></div>
     </div>`;
 
   document.getElementById('empty-state').style.display = 'none';
@@ -867,6 +889,142 @@ function generate() {
   out.innerHTML = html;
 
   saveSearch(role, buildBoolean(), expMin, expMax);
+}
+
+// ═══════════════════════════════════════════════
+//  PHASE 2: LOG RESULT + REPORT
+// ═══════════════════════════════════════════════
+function logResult() {
+  const inp = document.getElementById('result-count');
+  const count = parseInt(inp.value);
+  if (isNaN(count) || count < 0) {
+    inp.classList.add('error');
+    setTimeout(() => inp.classList.remove('error'), 1500);
+    return;
+  }
+
+  let cls, emoji, title, body, rec;
+  if (count >= 200) {
+    cls = 'green'; emoji = '✅'; title = 'GO — Healthy pool';
+    body = `<strong>${count.toLocaleString()}</strong> matching profiles found on LinkedIn Recruiter. Strong talent availability.`;
+    rec = 'Recommend opening the role. You have enough candidates to build a quality shortlist.';
+  } else if (count >= 50) {
+    cls = 'yellow'; emoji = '⚠️'; title = 'PROCEED WITH CAUTION — Moderate pool';
+    body = `<strong>${count.toLocaleString()}</strong> matching profiles found. Sourcing may take longer than usual.`;
+    rec = 'The role can be opened but set realistic timelines. Relax one or two must-haves if sourcing stalls after 2–3 weeks.';
+  } else {
+    cls = 'red'; emoji = '🔴'; title = 'RETHINK — Very tight pool';
+    body = `Only <strong>${count.toLocaleString()}</strong> matching profiles found. The pool is too thin to proceed confidently.`;
+    rec = 'Revisit requirements with the hiring manager before opening. Try moving some must-haves to good-to-have, or widening locations.';
+  }
+
+  document.getElementById('result-signal').innerHTML = `
+    <div class="signal ${cls}">
+      <div class="signal-dot"></div>
+      <div class="signal-body">
+        <strong>${emoji} ${title}</strong>
+        <p>${body}</p>
+        <p style="margin-top:5px;font-style:italic;font-size:12px">${rec}</p>
+      </div>
+    </div>
+    <button class="btn-report" onclick="generateReport(${count})">📄 Generate Hiring Manager Report</button>`;
+
+  // Persist count into latest history entry
+  const h = getHistory();
+  if (h.length) { h[0].resultCount = count; h[0].resultCls = cls; localStorage.setItem('tps_v2', JSON.stringify(h)); renderHistory(); }
+}
+
+function generateReport(count) {
+  const role   = document.getElementById('f-role').value.trim();
+  const expMin = document.getElementById('f-exp-min').value.trim();
+  const expMax = document.getElementById('f-exp-max').value.trim();
+  const date   = new Date().toLocaleDateString('en-IN', {day:'numeric', month:'long', year:'numeric'});
+  const boolStr = buildBoolean();
+
+  let sigLabel, sigColor, sigBg, rec;
+  if (count >= 200) {
+    sigLabel = '✅ GO — Healthy Talent Pool';
+    sigColor = '#065F46'; sigBg = '#ECFDF5';
+    rec = 'Strong talent availability detected. Recommend proceeding with the role opening. Sufficient candidates exist to build a quality shortlist within a normal hiring timeline.';
+  } else if (count >= 50) {
+    sigLabel = '⚠️ PROCEED WITH CAUTION — Moderate Pool';
+    sigColor = '#92400E'; sigBg = '#FFFBEB';
+    rec = 'Moderate talent pool detected. The role can be opened but sourcing may take longer than usual. Set realistic hiring timelines (6–10 weeks) and consider relaxing one or two requirements if sourcing stalls.';
+  } else {
+    sigLabel = '🔴 RETHINK — Very Tight Pool';
+    sigColor = '#991B1B'; sigBg = '#FEF2F2';
+    rec = 'Very limited talent pool detected. Strongly recommend revisiting role requirements with the hiring manager before opening. Suggested actions: move some must-haves to good-to-have, widen target locations, or adjust experience range.';
+  }
+
+  const tagsHtml = (arr, cls) => arr.length
+    ? arr.map(s=>`<span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:600;margin:2px;background:${cls.bg};color:${cls.color}">${s}</span>`).join('')
+    : '<span style="color:#9CA3AF;font-size:12px">—</span>';
+
+  const mustStyle  = {bg:'#EEF0FE', color:'#4046C5'};
+  const goodStyle  = {bg:'#ECFDF5', color:'#065F46'};
+  const kwStyle    = {bg:'#FFF7ED', color:'#92400E'};
+  const locStyle   = {bg:'#FDF2F8', color:'#831843'};
+
+  const reportHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Talent Pool Report — ${role}</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Segoe UI',Arial,sans-serif;color:#1A1A2E;padding:48px 56px;max-width:820px;margin:0 auto}
+    h1{font-size:24px;font-weight:900;letter-spacing:-0.02em;margin-bottom:3px}
+    .sub{font-size:12px;color:#6B7280;margin-bottom:32px}
+    .signal-box{padding:20px 24px;border-radius:10px;margin-bottom:28px;background:${sigBg};border-left:5px solid ${sigColor}}
+    .sig-label{font-size:17px;font-weight:800;color:${sigColor};margin-bottom:8px}
+    .sig-count{font-size:40px;font-weight:900;color:${sigColor};line-height:1;margin-bottom:8px}
+    .sig-rec{font-size:13px;color:#374151;line-height:1.65}
+    .meta-row{display:flex;gap:40px;margin-bottom:28px;flex-wrap:wrap}
+    .kv .k{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#9CA3AF;margin-bottom:3px}
+    .kv .v{font-size:15px;font-weight:700}
+    .sec-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#9CA3AF;border-bottom:1px solid #F3F4F6;padding-bottom:6px;margin-bottom:10px;margin-top:22px}
+    .bool-pre{background:#1E2035;border-radius:8px;padding:14px 16px;font-family:'Courier New',monospace;font-size:11px;color:#94A3B8;white-space:pre-wrap;word-break:break-word;line-height:1.7}
+    .footer{margin-top:40px;padding-top:14px;border-top:1px solid #E4E7EB;display:flex;justify-content:space-between;font-size:10px;color:#9CA3AF}
+    @media print{body{padding:20px 28px}@page{margin:1.2cm}}
+  </style>
+</head>
+<body>
+  <h1>Talent Pool Assessment Report</h1>
+  <div class="sub">Prepared using Talent Pool Scout &nbsp;·&nbsp; ${date}</div>
+
+  <div class="signal-box">
+    <div class="sig-label">${sigLabel}</div>
+    <div class="sig-count">${count.toLocaleString()}<span style="font-size:18px;font-weight:400"> candidates</span></div>
+    <div class="sig-rec">${rec}</div>
+  </div>
+
+  <div class="meta-row">
+    <div class="kv"><div class="k">Role</div><div class="v">${role}</div></div>
+    ${expMin||expMax?`<div class="kv"><div class="k">Experience</div><div class="v">${expMin||'0'}–${expMax||'∞'} years</div></div>`:''}
+    <div class="kv"><div class="k">Date</div><div class="v">${date}</div></div>
+  </div>
+
+  <div class="sec-title">Must-Have Skills</div>
+  <div>${tagsHtml(S.must, mustStyle)}</div>
+
+  ${S.good.length?`<div class="sec-title">Good-to-Have Skills</div><div>${tagsHtml(S.good, goodStyle)}</div>`:''}
+  ${S.kw.length  ?`<div class="sec-title">JD Keywords</div><div>${tagsHtml(S.kw, kwStyle)}</div>`:''}
+  ${S.loc.length ?`<div class="sec-title">Locations Searched</div><div>${tagsHtml(S.loc, locStyle)}</div>`:''}
+
+  <div class="sec-title">LinkedIn Recruiter Boolean String Used</div>
+  <div class="bool-pre">${boolStr.replace(/</g,'&lt;')}</div>
+
+  <div class="footer">
+    <span>Generated by Talent Pool Scout</span>
+    <span>https://nitin-gr-dyntrace.github.io/Talent-pool/talent_pool_scout.html</span>
+  </div>
+  <script>window.onload=()=>setTimeout(()=>window.print(),400)<\/script>
+</body>
+</html>`;
+
+  const w = window.open('', '_blank');
+  w.document.write(reportHtml);
+  w.document.close();
 }
 
 // ═══════════════════════════════════════════════
@@ -888,7 +1046,8 @@ function saveSearch(role, boolStr, expMin, expMax) {
   const h = getHistory();
   h.unshift({ id:Date.now(), role, boolStr, expMin, expMax,
     date: new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}),
-    must:[...S.must], good:[...S.good], kw:[...S.kw], loc:[...S.loc], co:[...S.co] });
+    must:[...S.must], good:[...S.good], kw:[...S.kw], loc:[...S.loc], co:[...S.co],
+    resultCount: null, resultCls: null });
   if (h.length>30) h.pop();
   localStorage.setItem('tps_v2', JSON.stringify(h));
   updateBadge();
@@ -904,7 +1063,10 @@ function renderHistory() {
   if (!h.length) { g.innerHTML='<div class="empty" style="grid-column:1/-1"><div class="icon">📋</div><p>No searches yet.</p></div>'; return; }
   g.innerHTML = h.map(item=>`
     <div class="history-card" onclick="loadHistory(${item.id})">
-      <div class="hc-role">${esc(item.role)}</div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div class="hc-role">${esc(item.role)}</div>
+        ${item.resultCount!=null?`<span class="result-count-badge ${item.resultCls||'green'}">${item.resultCount.toLocaleString()} found</span>`:''}
+      </div>
       <div class="hc-meta">📅 ${item.date}${item.expMin||item.expMax?` · ⏱ ${item.expMin||0}–${item.expMax||'∞'} yrs`:''}</div>
       <div class="hc-tags">
         ${(item.must||[]).map(s=>`<span class="tag must">${esc(s)}</span>`).join('')}
