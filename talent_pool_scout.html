@@ -341,6 +341,9 @@ const SKILL_DB = [
   'GitHub Actions','GitLab CI','CircleCI','Helm','Prometheus','Datadog','New Relic','Splunk',
   'Linux','Unix','CI/CD','DevOps','DevSecOps','Site Reliability Engineering','SRE',
   'Cloud Architecture','Cloud Migration','Infrastructure as Code',
+  'OpenShift','Red Hat OpenShift','Puppet','Chef','Vagrant','Packer',
+  'Serverless','AWS Lambda','Azure Functions','Google Cloud Functions',
+  'ArgoCD','FluxCD','Tekton','Spinnaker','Vault','Consul',
   // ── Tech: Observability & APM ──
   'Dynatrace','AppDynamics','APM','Application Performance Management','Observability',
   'OpenTelemetry','Distributed Tracing','Jaeger','Zipkin','Elastic APM',
@@ -597,19 +600,30 @@ function parseJD() {
 
   // ── 1. Role title ──
   let roleTitle = '';
-  const titleRx = /(?:job\s+title|position|role|hiring\s+for|looking\s+for)[:\s]+([A-Z][^\n]{3,60})/i;
+  // Try explicit "Job Title: X" / "Position: X" — capture group requires uppercase start
+  const titleRx = /(?:job\s+title|position\s*:|role\s+title|title\s*:)\s*([A-Z][^\n]{3,70})/;
   const tm = text.match(titleRx);
   if (tm) {
-    roleTitle = tm[1].trim().replace(/[:\-–|•]+$/, '').trim();
-  } else {
-    // First non-empty short line that looks like a title (skip company/location noise)
+    const cand = tm[1].trim().replace(/[:\-–|•]+$/, '').trim();
+    if (/^[A-Z]/.test(cand) && !/^(?:at|for|of|by|with|in|to|the)\s/i.test(cand)) {
+      roleTitle = cand;
+    }
+  }
+  if (!roleTitle) {
+    // First non-empty short line that looks like a title (skip company/location/sentence noise)
+    const TITLE_SKIP = /^(?:at|for|by|with|in|to|the|a |an |about|of |join|we |our |this |apply|location|company|department|team|posted|salary|date|ref|job\s*id|req\s*id|experience|bachelor|master|degree|qualification)/i;
     for (const line of lines) {
       const l = line.trim();
-      if (l.length > 4 && l.length < 80 && /[A-Z]/.test(l[0]) && !l.endsWith('.')
+      if (l.length > 4 && l.length < 80
+          && /^[A-Z]/.test(l)       // must start with uppercase
+          && !l.endsWith('.')        // not a sentence ending
+          && !l.endsWith(',')        // not a list item
           && !l.includes('http')
-          && !/^(?:at|for|by|with|in|to|the|a |an |about|join|we |our |this |apply|location|company|department|team|posted|salary|date|ref|job\s*id|req\s*id)\b/i.test(l)
-          && !/\.(com|in|io|org|net)\b/i.test(l)
-          && !/^\d/.test(l)) {
+          && !TITLE_SKIP.test(l)
+          && !/\.(com|in|io|org)\b/i.test(l)
+          && !/^\d/.test(l)
+          && (l.split(',').length < 4)  // skip comma-heavy lines (skill lists)
+      ) {
         roleTitle = l; break;
       }
     }
@@ -631,17 +645,25 @@ function parseJD() {
   const niceSectionText = findSectionRange(text, NICE_SECTION_RX);
 
   // ── 4a. Skill DB scan ──
-  // Split text at the nice-to-have boundary for context
+  // When explicit requirement sections exist, scan ONLY those sections.
+  // This prevents skills mentioned in the job intro/responsibilities ("go-to-market strategy",
+  // "performance management culture") from being misclassified as candidate requirements.
+  // Fall back to full-text split only when no sections are detected.
   let niceBoundary = text.length;
   NICE_SECTION_RX.lastIndex = 0;
   const nb = NICE_SECTION_RX.exec(text);
   if (nb) niceBoundary = nb.index;
-  const mustZone = text.slice(0, niceBoundary);
-  const niceZone = text.slice(niceBoundary);
+  const mustZone = mustSectionText || text.slice(0, niceBoundary);
+  const niceZone = niceSectionText || (nb ? text.slice(niceBoundary) : '');
 
   const dbMust = new Set(), dbGood = new Set();
   for (const skill of SKILL_DB) {
-    const rx = new RegExp('\\b' + skill.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i');
+    const esc = skill.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // Skills starting/ending with non-word chars (e.g. .NET, C#, C++) need
+    // lookahead/lookbehind instead of \b which requires an adjacent word char
+    const startB = /^\w/.test(skill) ? '\\b' : '(?<![a-zA-Z0-9])';
+    const endB   = /\w$/.test(skill) ? '\\b' : '(?![a-zA-Z0-9])';
+    const rx = new RegExp(startB + esc + endB, 'i');
     if (rx.test(mustZone)) dbMust.add(skill);
     else if (rx.test(niceZone)) dbGood.add(skill);
   }
@@ -690,42 +712,62 @@ function parseJD() {
   mustArr = mustArr.slice(0, 12);
   goodArr = goodArr.slice(0, 15);
 
-  // ── 6. Keywords from common role-agnostic patterns ──
+  // ── 6. Keywords — role-descriptive multi-word phrases found in the JD ──
+  // These complement skills by capturing architectural/contextual concepts that
+  // make a candidate's profile match stronger in LinkedIn search.
   const KW_PATTERNS = [
-    /(?:data\s+(?:pipeline|warehouse|lake|mesh|platform|engineering|science|analytics))/gi,
-    /(?:machine\s+learning|deep\s+learning|artificial\s+intelligence|generative\s+AI)/gi,
-    /(?:cloud\s+(?:native|infrastructure|architecture|migration))/gi,
-    /(?:ci\/cd|continuous\s+integration|continuous\s+delivery)/gi,
-    /(?:agile|scrum|kanban)\s+(?:methodology|framework|delivery)/gi,
-    /(?:stakeholder\s+management|cross[\s-]functional\s+(?:teams?|collaboration))/gi,
-    /(?:talent\s+acquisition|employer\s+branding|workforce\s+planning)/gi,
-    /(?:revenue\s+(?:generation|growth|operations)|pipeline\s+management)/gi,
-    /(?:financial\s+(?:modelling|planning|reporting|analysis)|P&L\s+management)/gi,
-    /(?:supply\s+chain\s+(?:management|optimization)|demand\s+planning)/gi,
-    /(?:customer\s+success|customer\s+experience|customer\s+retention)/gi,
-    /(?:product\s+(?:roadmap|strategy|discovery|led\s+growth))/gi,
-    /(?:brand\s+(?:management|strategy|building))/gi,
-    /(?:regulatory\s+(?:compliance|affairs)|statutory\s+compliance)/gi,
-    /(?:change\s+management|organizational\s+(?:change|transformation))/gi,
-    /(?:high[\s-]performance\s+(?:teams?|culture)|performance\s+management)/gi,
-    /(?:full[\s-]cycle\s+recruiting|end[\s-]to[\s-]end\s+recruitment)/gi,
-    /(?:go[\s-]to[\s-]market|GTM\s+strategy)/gi,
-    /(?:mergers?\s+(?:and|&)\s+acquisitions?|M&A)/gi,
-    /(?:operational\s+excellence|process\s+(?:improvement|optimization))/gi,
+    // Tech — architecture & systems
+    /(?:microservices?\s+(?:architecture|design|based)?|distributed\s+systems?)/gi,
+    /(?:cloud[\s-]native\s+(?:applications?|architecture|development|observability|monitoring)?)/gi,
+    /(?:containeriz(?:ed|ation)\s+(?:applications?|workloads?)?|container\s+orchestration)/gi,
+    /(?:serverless\s+(?:architecture|computing|functions?)?)/gi,
+    /(?:high\s+availability|fault[\s-]tolerant|scalable\s+(?:systems?|architecture|infrastructure))/gi,
+    /(?:multi[\s-]tenant(?:cy)?|SaaS\s+(?:platform|product|application|offering))/gi,
+    /(?:event[\s-]driven\s+(?:architecture|design)|message[\s-]driven)/gi,
+    /(?:API[\s-]first|REST(?:ful)?\s+API[s]?|API\s+(?:design|development|management|gateway))/gi,
+    // Tech — data & ML
+    /(?:data\s+(?:pipeline[s]?|warehouse|lake(?:house)?|mesh|platform|engineering|governance))/gi,
+    /(?:machine\s+learning|deep\s+learning|artificial\s+intelligence|generative\s+AI|LLM)/gi,
+    /(?:real[\s-]time\s+(?:data|analytics|processing|streaming)|stream\s+processing)/gi,
+    // Tech — DevOps & observability
+    /(?:ci\/cd\s+(?:pipeline[s]?|workflow[s]?|automation)?|continuous\s+(?:integration|delivery|deployment))/gi,
     /(?:full[\s-]stack\s+observability|distributed\s+tracing|log\s+(?:management|analytics|monitoring))/gi,
-    /(?:application\s+performance\s+(?:management|monitoring)|APM\s+(?:tools?|platform))/gi,
-    /(?:cloud[\s-]native\s+(?:observability|monitoring)|infrastructure\s+monitoring)/gi,
-    /(?:site\s+reliability|error\s+budget[s]?|service\s+level\s+(?:objective|agreement|indicator))/gi,
-    /(?:enterprise\s+(?:architecture|software|solution[s]?))/gi,
-    /(?:pre[\s-]sales\s+(?:support|engineering)|technical\s+(?:presales|pre-sales))/gi,
-    /(?:proof\s+of\s+concept|POC|technical\s+demo(?:nstration)?)/gi,
-    /(?:digital\s+(?:transformation|strategy|innovation))/gi,
-    /(?:platform\s+engineering|developer\s+experience|internal\s+developer\s+platform)/gi,
+    /(?:application\s+performance\s+(?:management|monitoring)|APM\s+(?:tools?|platform|solution))/gi,
+    /(?:infrastructure\s+(?:as\s+code|monitoring|automation|management))/gi,
+    /(?:site\s+reliability|error\s+budget[s]?|service\s+level\s+(?:objective[s]?|agreement[s]?|indicator[s]?))/gi,
+    /(?:platform\s+engineering|developer\s+(?:experience|platform|productivity))/gi,
+    /(?:DevOps\s+(?:practices?|culture|transformation|pipeline)|DevSecOps)/gi,
+    // Business & product
+    /(?:digital\s+(?:transformation|strategy|innovation|journey))/gi,
+    /(?:product[\s-]led\s+growth|PLG|product\s+(?:roadmap|strategy|discovery))/gi,
+    /(?:go[\s-]to[\s-]market\s+(?:strategy|motion|execution)|GTM\s+(?:strategy|execution))/gi,
+    /(?:revenue\s+(?:growth|operations|generation)|pipeline\s+management)/gi,
+    /(?:customer\s+(?:success|experience|retention|onboarding|lifecycle))/gi,
+    /(?:enterprise\s+(?:sales|software|architecture|solution[s]?|accounts?))/gi,
+    /(?:pre[\s-]sales\s+(?:support|engineering)|technical\s+(?:presales|pre-sales|consulting))/gi,
+    /(?:proof\s+of\s+concept|POC|technical\s+demo(?:nstration)?|pilot\s+project)/gi,
+    // HR & talent
+    /(?:talent\s+acquisition|employer\s+branding|workforce\s+planning|talent\s+management)/gi,
+    /(?:full[\s-]cycle\s+recruit(?:ing|ment)|end[\s-]to[\s-]end\s+recruitment)/gi,
+    /(?:diversity[,\s]+equity\s+(?:and|&)\s+inclusion|DEI\s+(?:hiring|initiative[s]?))/gi,
+    // Finance & ops
+    /(?:financial\s+(?:modelling|planning|reporting|analysis|forecasting)|FP&A)/gi,
+    /(?:supply\s+chain\s+(?:management|optimization)|demand\s+(?:planning|forecasting))/gi,
+    /(?:mergers?\s+(?:and|&)\s+acquisitions?|M&A\s+(?:advisory|due\s+diligence)?)/gi,
+    /(?:operational\s+excellence|process\s+(?:improvement|optimization|re[\s-]engineering))/gi,
+    /(?:change\s+management|organizational\s+(?:change|transformation|design))/gi,
+    /(?:regulatory\s+(?:compliance|affairs)|statutory\s+(?:compliance|reporting))/gi,
+    /(?:stakeholder\s+management|cross[\s-]functional\s+(?:teams?|collaboration|leadership))/gi,
   ];
+  const allSkillsLower = new Set([...mustArr, ...goodArr].map(s => s.toLowerCase()));
   const keywords = new Set();
   for (const rx of KW_PATTERNS) {
     for (const m of text.matchAll(rx)) {
-      keywords.add(m[0].trim().replace(/\s+/g, ' '));
+      const kw = m[0].trim().replace(/\s+/g, ' ');
+      // Don't add if already captured as a skill (avoids "CI/CD" appearing in both)
+      if (!allSkillsLower.has(kw.toLowerCase())) {
+        keywords.add(kw);
+      }
     }
   }
   const kwArr = [...keywords].slice(0, 12);
