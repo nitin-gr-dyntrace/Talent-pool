@@ -190,6 +190,13 @@
     .role-header h2 { font-size: 18px; font-weight: 800; }
     .role-badge { background: #EEF0FE; color: #4046C5; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
 
+    /* ─── Broad / Full toggle ─── */
+    .bool-tabs { display:flex; gap:6px; }
+    .btog { padding:4px 12px; border:1.5px solid #E4E7EB; border-radius:6px; font-size:11px; font-weight:600; color:#6B7280; background:#fff; cursor:pointer; transition:all 0.15s; }
+    .btog.active { background:#5B6CF6; color:#fff; border-color:#5B6CF6; }
+    .btog:hover:not(.active) { border-color:#5B6CF6; color:#5B6CF6; }
+    .bool-char-row { display:flex; justify-content:space-between; align-items:center; margin-top:6px; font-size:11px; }
+
     /* ─── Phase 2: Log Result ─── */
     .log-row { display: flex; gap: 10px; align-items: center; margin-bottom: 4px; }
     .log-row input[type=number] { width: 130px; padding: 8px 12px; border: 1.5px solid #E4E7EB; border-radius: 8px; font-size: 14px; font-weight: 700; color: #1A1A2E; outline: none; transition: border-color 0.15s; }
@@ -925,6 +932,69 @@ function getSignal() {
 }
 
 // ═══════════════════════════════════════════════
+//  BROAD / FULL TOGGLE
+// ═══════════════════════════════════════════════
+let boolMode = 'full'; // 'full' | 'broad'
+
+function buildBroadBoolean() {
+  // Broad = must-have skills only — wider pool, good for initial scouting
+  return S.must.map(s => `"${s}"`).join(' AND ');
+}
+
+function buildBroadColoredBoolean() {
+  const w  = (cls, t) => `<span class="${cls}">${esc(t)}</span>`;
+  const OP = t => `<span class="op">${t}</span>`;
+  return S.must.map(s => w('must-kw', `"${s}"`)).join(' ' + OP('AND') + ' ');
+}
+
+function getCurrentBool() {
+  return boolMode === 'broad' ? buildBroadBoolean() : buildBoolean();
+}
+
+function switchBoolMode(mode) {
+  boolMode = mode;
+  document.getElementById('bool-box').innerHTML =
+    mode === 'broad' ? buildBroadColoredBoolean() : buildColoredBoolean();
+  document.getElementById('btog-full').classList.toggle('active',  mode === 'full');
+  document.getElementById('btog-broad').classList.toggle('active', mode === 'broad');
+  const descEl = document.getElementById('bool-desc');
+  if (descEl) descEl.innerHTML = mode === 'broad'
+    ? '🔓 <strong>Broad:</strong> Must-Have skills only — wider pool, use for first scouting run'
+    : '🎯 <strong>Full:</strong> Must-Have + Good-to-Have + Keywords — most targeted';
+  refreshCharCount();
+}
+
+function refreshCharCount() {
+  const len = getCurrentBool().length;
+  const el  = document.getElementById('bool-charcount');
+  if (!el) return;
+  el.textContent = `${len} chars`;
+  el.style.color = len > 900 ? '#EF4444' : len > 700 ? '#F59E0B' : '#6B7280';
+  const warn = document.getElementById('bool-charwarn');
+  if (warn) warn.style.display = len > 900 ? 'inline' : 'none';
+}
+
+// ─── Boolean string test suite (runs silently on load) ───
+(function selfTest() {
+  const fakeMust = ['Python', 'Kubernetes', '.NET', 'C#'];
+  const fakeGood = ['Docker', 'AWS'];
+  const fakeKw   = ['microservices architecture'];
+  const build = (m, g, k) => {
+    const parts = [];
+    if (m.length) parts.push(m.map(s=>`"${s}"`).join(' AND '));
+    if (g.length) parts.push('(' + g.map(s=>`"${s}"`).join(' OR ') + ')');
+    if (k.length) parts.push('(' + k.map(s=>`"${s}"`).join(' OR ') + ')');
+    return parts.join('\n\nAND\n\n');
+  };
+  const result = build(fakeMust, fakeGood, fakeKw);
+  const ok = result.includes('"Python" AND') && result.includes('"Kubernetes" AND') &&
+             result.includes('".NET"') && result.includes('"C#"') &&
+             result.includes('("Docker" OR "AWS")') &&
+             result.includes('("microservices architecture")');
+  if (!ok) console.warn('[TalentPoolScout] Boolean builder self-test FAILED', result);
+})();
+
+// ═══════════════════════════════════════════════
 //  GENERATE
 // ═══════════════════════════════════════════════
 function generate() {
@@ -935,7 +1005,8 @@ function generate() {
   const expMin = document.getElementById('f-exp-min').value.trim();
   const expMax = document.getElementById('f-exp-max').value.trim();
   const sig    = getSignal();
-  const liUrl  = `https://www.linkedin.com/recruiter/search?keywords=${encodeURIComponent(S.must.slice(0,3).join(' '))}`;
+  boolMode = 'full'; // reset toggle on each new search
+  const liUrl  = `https://www.linkedin.com/recruiter/search?keywords=${encodeURIComponent(buildBroadBoolean().slice(0, 200))}`;
 
   const rows = [
     { label:'Role',             value: role,                             done:true },
@@ -975,9 +1046,19 @@ function generate() {
       <div class="card-title">Search Summary</div>${checkHtml}
     </div>
     <div class="card">
-      <div class="card-title">LinkedIn Recruiter Boolean String</div>
-      <p style="font-size:12px;color:#6B7280;margin-bottom:10px">Copy this into the <strong>Keywords</strong> field in LinkedIn Recruiter</p>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div class="card-title" style="margin-bottom:0">LinkedIn Recruiter Boolean String</div>
+        <div class="bool-tabs">
+          <button class="btog active" id="btog-full"  onclick="switchBoolMode('full')">🎯 Full</button>
+          <button class="btog"        id="btog-broad" onclick="switchBoolMode('broad')">🔓 Broad</button>
+        </div>
+      </div>
+      <p style="font-size:12px;color:#6B7280;margin-bottom:10px" id="bool-desc">🎯 <strong>Full:</strong> Must-Have + Good-to-Have + Keywords — most targeted</p>
       <div class="bool-box" id="bool-box">${buildColoredBoolean()}</div>
+      <div class="bool-char-row">
+        <span id="bool-charcount" style="color:#6B7280">${buildBoolean().length} chars</span>
+        <span id="bool-charwarn" style="color:#EF4444;font-weight:600;display:${buildBoolean().length>900?'inline':'none'}">⚠️ Very long — may hit LinkedIn's limit. Switch to Broad.</span>
+      </div>
       <div class="bool-actions">
         <a href="${liUrl}" target="_blank" class="btn-linkedin">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="white"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
@@ -1328,7 +1409,8 @@ function generateReport(count) {
 //  COPY
 // ═══════════════════════════════════════════════
 function copyBool() {
-  const text = document.getElementById('bool-box').innerText;
+  // Always copy the plain-text version of whichever mode is active
+  const text = getCurrentBool();
   const fb = () => { const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); };
   (navigator.clipboard ? navigator.clipboard.writeText(text).catch(fb) : Promise.resolve(fb()))
     .then(()=>{ document.querySelectorAll('.btn-copy').forEach(b=>{ b.textContent='✅ Copied!'; setTimeout(()=>b.textContent='📋 Copy String',2000); }); });
