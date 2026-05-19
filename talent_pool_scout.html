@@ -203,6 +203,22 @@
     .result-count-badge.red    { background: #FEF2F2; color: #991B1B; }
     .btn-report { display: inline-flex; align-items: center; gap: 7px; padding: 9px 18px; background: #1A1A2E; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
     .btn-report:hover { background: #374151; }
+
+    /* ─── Phase 3: Dashboard ─── */
+    .p3-dashboard { margin-top: 16px; border-top: 2px solid #E4E7EB; padding-top: 16px; }
+    .p3-header { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+    .p3-header-title { font-size: 13px; font-weight: 700; color: #1A1A2E; }
+    .p3-badge { font-size: 10px; font-weight: 700; background: linear-gradient(135deg,#5B6CF6,#8B5CF6); color: #fff; padding: 2px 9px; border-radius: 10px; letter-spacing: 0.04em; }
+    .p3-grid { display: grid; grid-template-columns: 1.6fr 1fr 1fr; gap: 12px; }
+    .p3-card { background: #fff; border: 1px solid #E4E7EB; border-radius: 10px; padding: 14px; }
+    .p3-card-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #6B7280; margin-bottom: 10px; }
+    .skill-bar-row { display: flex; align-items: center; gap: 7px; margin-bottom: 5px; }
+    .skill-bar-label { font-size: 11px; color: #374151; width: 100px; flex-shrink: 0; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .skill-bar-track { flex: 1; background: #F3F4F6; border-radius: 4px; height: 13px; overflow: hidden; }
+    .skill-bar-fill { height: 100%; border-radius: 4px; }
+    .skill-bar-tag { font-size: 9px; font-weight: 700; width: 28px; flex-shrink: 0; }
+    .loc-pill { display: inline-flex; align-items: center; gap: 4px; background: #FDF2F8; border: 1px solid #F0ABFC; border-radius: 20px; padding: 5px 11px; font-size: 11px; font-weight: 600; color: #701A75; margin: 3px 2px; }
+    .loc-empty { color: #9CA3AF; font-size: 12px; font-style: italic; padding: 6px 0; }
   </style>
 </head>
 <body>
@@ -1027,6 +1043,117 @@ function logResult() {
   // Persist count into latest history entry
   const h = getHistory();
   if (h.length) { h[0].resultCount = count; h[0].resultCls = cls; localStorage.setItem('tps_v2', JSON.stringify(h)); renderHistory(); }
+
+  // Append Phase 3 dashboard charts
+  document.getElementById('result-signal').innerHTML += renderDashboard();
+}
+
+// ═══════════════════════════════════════════════
+//  PHASE 3: VISUAL DASHBOARD
+// ═══════════════════════════════════════════════
+function renderDashboard() {
+
+  // ── Chart 1: Skills bar chart ──
+  const mustItems = S.must.slice(0, 10).map(s => ({ label: s, type: 'must' }));
+  const goodItems = S.good.slice(0, 8).map(s => ({ label: s, type: 'good' }));
+  const allItems  = [...mustItems, ...goodItems];
+
+  const skillBarsHtml = allItems.length ? allItems.map(item => {
+    const isMust  = item.type === 'must';
+    const fillPct = isMust ? '100%' : '60%';
+    const fillClr = isMust ? '#5B6CF6' : '#10B981';
+    const tagClr  = isMust ? '#5B6CF6' : '#10B981';
+    const tag     = isMust ? 'AND' : 'OR';
+    const lbl     = item.label.length > 14 ? item.label.slice(0, 13) + '…' : item.label;
+    return `<div class="skill-bar-row">
+      <span class="skill-bar-label" title="${item.label}">${lbl}</span>
+      <div class="skill-bar-track">
+        <div class="skill-bar-fill" style="width:${fillPct};background:${fillClr};opacity:${isMust?'1':'0.75'}"></div>
+      </div>
+      <span class="skill-bar-tag" style="color:${tagClr}">${tag}</span>
+    </div>`;
+  }).join('')
+  : '<div class="loc-empty">No skills detected</div>';
+
+  // ── Chart 2: Location pills ──
+  const locHtml = S.loc.length
+    ? S.loc.map(l => `<span class="loc-pill">📍 ${l}</span>`).join('')
+    : '<div class="loc-empty">No locations set — add locations for best results</div>';
+
+  // ── Chart 3: SVG donut — search mix ──
+  const donutData = [
+    { label: 'Must-Have',    count: S.must.length, color: '#5B6CF6' },
+    { label: 'Good-to-Have', count: S.good.length, color: '#10B981' },
+    { label: 'Keywords',     count: S.kw.length,   color: '#F59E0B' },
+    { label: 'Companies',    count: S.co.length,   color: '#EC4899' },
+  ].filter(d => d.count > 0);
+
+  const total = donutData.reduce((a, d) => a + d.count, 0);
+  const r = 38, cx = 50, cy = 50, circ = 2 * Math.PI * r;
+  let cumPct = 0;
+
+  const slices = donutData.map(d => {
+    const pct  = d.count / total;
+    const dash = (pct * circ).toFixed(2);
+    const gap  = (circ - dash).toFixed(2);
+    // start from top: offset = circ/4 - (cumPct * circ)
+    const offset = (circ / 4 - cumPct * circ).toFixed(2);
+    cumPct += pct;
+    return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${d.color}"
+      stroke-width="16" stroke-dasharray="${dash} ${gap}" stroke-dashoffset="${offset}" />`;
+  }).join('');
+
+  const legendHtml = donutData.map(d =>
+    `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+      <div style="width:9px;height:9px;border-radius:2px;background:${d.color};flex-shrink:0"></div>
+      <span style="font-size:11px;color:#374151">${d.label}: <strong>${d.count}</strong></span>
+    </div>`
+  ).join('');
+
+  return `
+  <div class="p3-dashboard">
+    <div class="p3-header">
+      <span class="p3-header-title">📈 Search Dashboard</span>
+      <span class="p3-badge">PHASE 3</span>
+    </div>
+    <div class="p3-grid">
+
+      <!-- Skills Bar Chart -->
+      <div class="p3-card">
+        <div class="p3-card-title">📊 Skills Profile · ${mustItems.length} required · ${goodItems.length} optional</div>
+        ${skillBarsHtml}
+        <div style="display:flex;gap:14px;margin-top:10px;padding-top:8px;border-top:1px solid #F3F4F6">
+          <span style="display:flex;align-items:center;gap:4px;font-size:10px;color:#5B6CF6;font-weight:700">
+            <div style="width:10px;height:3px;background:#5B6CF6;border-radius:2px"></div> AND = required
+          </span>
+          <span style="display:flex;align-items:center;gap:4px;font-size:10px;color:#10B981;font-weight:700">
+            <div style="width:10px;height:3px;background:#10B981;border-radius:2px"></div> OR = optional
+          </span>
+        </div>
+      </div>
+
+      <!-- Location Visual -->
+      <div class="p3-card">
+        <div class="p3-card-title">📍 Target Locations · ${S.loc.length || 0} set</div>
+        <div style="line-height:1.4">${locHtml}</div>
+        ${S.loc.length ? `<div style="margin-top:10px;padding-top:8px;border-top:1px solid #F3F4F6;font-size:10px;color:#9CA3AF">Set these in LinkedIn's Location filter, not in keywords</div>` : ''}
+      </div>
+
+      <!-- Donut Chart -->
+      <div class="p3-card">
+        <div class="p3-card-title">🥧 Search Mix · ${total} total criteria</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            ${total > 0 ? slices : `<circle cx="50" cy="50" r="38" fill="none" stroke="#E4E7EB" stroke-width="16"/>`}
+            <text x="${cx}" y="${cy - 4}" text-anchor="middle" font-size="16" font-weight="800" fill="#1A1A2E">${total}</text>
+            <text x="${cx}" y="${cy + 11}" text-anchor="middle" font-size="9" fill="#6B7280">criteria</text>
+          </svg>
+          <div style="flex:1">${legendHtml}</div>
+        </div>
+      </div>
+
+    </div>
+  </div>`;
 }
 
 function generateReport(count) {
