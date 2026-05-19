@@ -341,6 +341,14 @@ const SKILL_DB = [
   'GitHub Actions','GitLab CI','CircleCI','Helm','Prometheus','Datadog','New Relic','Splunk',
   'Linux','Unix','CI/CD','DevOps','DevSecOps','Site Reliability Engineering','SRE',
   'Cloud Architecture','Cloud Migration','Infrastructure as Code',
+  // ── Tech: Observability & APM ──
+  'Dynatrace','AppDynamics','APM','Application Performance Management','Observability',
+  'OpenTelemetry','Distributed Tracing','Jaeger','Zipkin','Elastic APM',
+  'Log Management','Log Analytics','Metrics','Alerting','SLO','SLI','Error Budgets',
+  'Service Mesh','Istio','Envoy','Linkerd','eBPF','Fluentd','Logstash','Kibana','ELK Stack',
+  'Grafana Loki','Tempo','OpenMetrics','StatsD','Telegraf','InfluxDB','Victoria Metrics',
+  'Full Stack Observability','AIOps','IT Operations','NOC','Incident Management',
+  'Runbook Automation','CMDB','Service Catalog','ITSM','PagerDuty','OpsGenie',
   // ── Tech: Web & Mobile ──
   'React','Angular','Vue.js','Node.js','Django','Flask','FastAPI','Spring Boot','REST API',
   'GraphQL','Microservices','React Native','Flutter','iOS','Android',
@@ -529,9 +537,21 @@ function bulletToSkill(raw) {
   if (words.length > 5) s = words.slice(0, 4).join(' ');
   // Remove trailing punctuation
   s = s.replace(/[.:!?()\[\]]+$/, '').trim();
-  // Skip lines that are just verbs or too vague
-  const SKIP = /^(?:manage|work|ensure|support|drive|lead|build|develop|create|maintain|help|assist|provide|conduct|review|prepare|handle|coordinate|communicate|collaborate|partner|own|define|execute|analyse|analyze|monitor|report|improve|design|implement|establish|identify|deliver|oversee|facilitate|engage|demonstrate|participate|contribute|achieve)[\s\b]/i;
-  if (SKIP.test(s) || s.length < 3) return null;
+  // If line starts with an action verb, try to rescue the skill after it
+  // e.g. "Build microservices on Kubernetes" → skip "Build" → "microservices on Kubernetes" → "microservices"
+  const SKIP_VERB = /^(?:manage|work|ensure|support|drive|lead|build|develop|create|maintain|help|assist|provide|conduct|review|prepare|handle|coordinate|communicate|collaborate|partner|own|define|execute|analyse|analyze|monitor|report|improve|design|implement|establish|identify|deliver|oversee|facilitate|engage|demonstrate|participate|contribute|achieve|write|use|utilize|troubleshoot|debug|deploy|configure|set\s+up|integrate|automate|optimise|optimize|scale|migrate|architect)\b/i;
+  if (SKIP_VERB.test(s)) {
+    // Drop the first verb word and re-process the rest
+    const afterVerb = s.replace(/^\S+\s+/, '').trim();
+    // Strip filler prepositions at the start of the remainder
+    const cleaned = afterVerb.replace(/^(?:and|or|with|in|on|for|to|the|a|an)\s+/i, '').trim();
+    if (cleaned.length >= 3 && !SKIP_VERB.test(cleaned)) {
+      s = cleaned.split(/\s+/).slice(0, 4).join(' ').replace(/[.:!?()\[\]]+$/, '').trim();
+    } else {
+      return null;
+    }
+  }
+  if (s.length < 3) return null;
   // Title-case if all lowercase
   if (s === s.toLowerCase()) s = s.replace(/\b\w/g, c => c.toUpperCase());
   return s.length >= 3 ? s : null;
@@ -582,10 +602,14 @@ function parseJD() {
   if (tm) {
     roleTitle = tm[1].trim().replace(/[:\-–|•]+$/, '').trim();
   } else {
-    // First non-empty short line that looks like a title
+    // First non-empty short line that looks like a title (skip company/location noise)
     for (const line of lines) {
       const l = line.trim();
-      if (l.length > 4 && l.length < 80 && /[A-Z]/.test(l[0]) && !l.endsWith('.') && !l.includes('http')) {
+      if (l.length > 4 && l.length < 80 && /[A-Z]/.test(l[0]) && !l.endsWith('.')
+          && !l.includes('http')
+          && !/^(?:at|for|by|with|in|to|the|a |an |about|join|we |our |this |apply|location|company|department|team|posted|salary|date|ref|job\s*id|req\s*id)\b/i.test(l)
+          && !/\.(com|in|io|org|net)\b/i.test(l)
+          && !/^\d/.test(l)) {
         roleTitle = l; break;
       }
     }
@@ -658,13 +682,13 @@ function parseJD() {
   // Remove good items that also appear in must
   goodArr = goodArr.filter(g => !mustArr.some(m => m.toLowerCase() === g.toLowerCase()));
 
-  // Balance: if must > 6, move excess to good
-  if (mustArr.length > 6) {
-    goodArr = [...mustArr.slice(6), ...goodArr].slice(0, 8);
-    mustArr = mustArr.slice(0, 6);
+  // Balance: if must > 12, move excess to good
+  if (mustArr.length > 12) {
+    goodArr = [...mustArr.slice(12), ...goodArr].slice(0, 15);
+    mustArr = mustArr.slice(0, 12);
   }
-  mustArr = mustArr.slice(0, 6);
-  goodArr = goodArr.slice(0, 8);
+  mustArr = mustArr.slice(0, 12);
+  goodArr = goodArr.slice(0, 15);
 
   // ── 6. Keywords from common role-agnostic patterns ──
   const KW_PATTERNS = [
@@ -688,16 +712,23 @@ function parseJD() {
     /(?:go[\s-]to[\s-]market|GTM\s+strategy)/gi,
     /(?:mergers?\s+(?:and|&)\s+acquisitions?|M&A)/gi,
     /(?:operational\s+excellence|process\s+(?:improvement|optimization))/gi,
+    /(?:full[\s-]stack\s+observability|distributed\s+tracing|log\s+(?:management|analytics|monitoring))/gi,
+    /(?:application\s+performance\s+(?:management|monitoring)|APM\s+(?:tools?|platform))/gi,
+    /(?:cloud[\s-]native\s+(?:observability|monitoring)|infrastructure\s+monitoring)/gi,
+    /(?:site\s+reliability|error\s+budget[s]?|service\s+level\s+(?:objective|agreement|indicator))/gi,
+    /(?:enterprise\s+(?:architecture|software|solution[s]?))/gi,
+    /(?:pre[\s-]sales\s+(?:support|engineering)|technical\s+(?:presales|pre-sales))/gi,
+    /(?:proof\s+of\s+concept|POC|technical\s+demo(?:nstration)?)/gi,
+    /(?:digital\s+(?:transformation|strategy|innovation))/gi,
+    /(?:platform\s+engineering|developer\s+experience|internal\s+developer\s+platform)/gi,
   ];
   const keywords = new Set();
   for (const rx of KW_PATTERNS) {
     for (const m of text.matchAll(rx)) {
       keywords.add(m[0].trim().replace(/\s+/g, ' '));
-      if (keywords.size >= 5) break;
     }
-    if (keywords.size >= 5) break;
   }
-  const kwArr = [...keywords].slice(0, 5);
+  const kwArr = [...keywords].slice(0, 12);
 
   // ── 7. Locations ──
   const locArr = [];
