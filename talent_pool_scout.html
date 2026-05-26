@@ -236,6 +236,89 @@
     @keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-5px)} 40%,80%{transform:translateX(5px)} }
     .field-err .tag-wrap,
     .field-err .must3-row input { border-color:#EF4444 !important; animation:shake 0.35s ease; }
+
+    /* ── Gemini Settings ── */
+    .settings-btn {
+      margin-left:auto; display:flex; align-items:center; gap:7px;
+      padding:7px 14px; background:#F3F4F6; border:1.5px solid #E4E7EB;
+      border-radius:8px; font-size:12px; font-weight:600; cursor:pointer;
+      color:#374151; transition:all 0.15s; white-space:nowrap; flex-shrink:0;
+    }
+    .settings-btn:hover { background:#EEF0FE; border-color:#C7CDFC; color:#4046C5; }
+    .ai-dot { width:8px; height:8px; border-radius:50%; background:#D1D5DB; display:inline-block; flex-shrink:0; }
+    .ai-dot.on { background:#10B981; box-shadow:0 0 0 2px #A7F3D0; }
+    .settings-overlay {
+      display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4);
+      z-index:999; align-items:flex-start; justify-content:flex-end;
+    }
+    .settings-overlay.open { display:flex; }
+    .settings-panel {
+      background:#fff; width:380px; min-height:100vh; padding:28px 24px 40px;
+      box-shadow:-4px 0 28px rgba(0,0,0,0.14); overflow-y:auto; position:relative;
+    }
+    .settings-panel h2 { font-size:16px; font-weight:800; margin-bottom:4px; }
+    .settings-sub { font-size:12px; color:#6B7280; margin-bottom:24px; line-height:1.5; }
+    .settings-section { margin-bottom:26px; }
+    .settings-label {
+      font-size:11px; font-weight:700; text-transform:uppercase;
+      letter-spacing:.06em; color:#374151; margin-bottom:6px;
+    }
+    .settings-desc { font-size:12px; color:#6B7280; margin-bottom:10px; line-height:1.65; }
+    .api-input-row { display:flex; gap:8px; }
+    .api-input {
+      flex:1; padding:9px 12px; border:1.5px solid #E4E7EB; border-radius:8px;
+      font-size:13px; outline:none; font-family:monospace; letter-spacing:.04em;
+      transition:border-color 0.15s;
+    }
+    .api-input:focus { border-color:#5B6CF6; }
+    .btn-save-key {
+      padding:9px 16px; background:#5B6CF6; color:#fff; border:none;
+      border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;
+    }
+    .btn-save-key:hover { background:#4046C5; }
+    .key-status { margin-top:8px; font-size:12px; border-radius:7px; padding:8px 12px; }
+    .key-status.set   { background:#ECFDF5; border:1px solid #A7F3D0; color:#065F46; }
+    .key-status.unset { background:#FFF7ED; border:1px solid #FDE68A; color:#92400E; }
+    .btn-clear-key {
+      margin-top:6px; font-size:11px; color:#EF4444; background:none;
+      border:none; cursor:pointer; padding:0; display:none;
+    }
+    .how-step { display:flex; gap:10px; margin-bottom:12px; align-items:flex-start; }
+    .how-num {
+      width:22px; height:22px; border-radius:50%; background:#5B6CF6; color:#fff;
+      font-size:11px; font-weight:800; display:flex; align-items:center;
+      justify-content:center; flex-shrink:0; margin-top:1px;
+    }
+    .how-text { font-size:12px; color:#374151; line-height:1.6; }
+    .how-text a { color:#5B6CF6; text-decoration:none; font-weight:600; }
+    .how-text a:hover { text-decoration:underline; }
+    .how-text code { background:#F3F4F6; padding:1px 5px; border-radius:4px; font-size:11px; }
+    .settings-close {
+      position:absolute; top:16px; right:18px; background:none; border:none;
+      font-size:20px; cursor:pointer; color:#9CA3AF; line-height:1;
+    }
+    .settings-close:hover { color:#1A1A2E; }
+    .settings-divider { border:none; border-top:1px solid #F3F4F6; margin:0 0 20px; }
+    /* ── AI Spinner ── */
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .ai-spinner {
+      display:inline-block; width:13px; height:13px; border:2px solid #C7CDFC;
+      border-top-color:#5B6CF6; border-radius:50%; animation:spin 0.7s linear infinite;
+      vertical-align:middle; margin-right:5px; flex-shrink:0;
+    }
+    /* ── Refine button ── */
+    .btn-refine {
+      display:inline-flex; align-items:center; gap:6px; padding:7px 14px;
+      background:#fff; color:#5B6CF6; border:1.5px solid #5B6CF6;
+      border-radius:6px; font-size:12px; font-weight:600; cursor:pointer;
+      transition:all 0.15s; white-space:nowrap;
+    }
+    .btn-refine:hover { background:#EEF0FE; }
+    .refine-result {
+      margin-top:12px; padding:12px 14px; background:#F0F4FF;
+      border:1px solid #C7CDFC; border-radius:8px; font-size:12px;
+      color:#1A1A2E; line-height:1.7; white-space:pre-wrap; display:none;
+    }
   </style>
 </head>
 <body>
@@ -245,6 +328,64 @@
   <div class="header-text">
     <h1>Talent Pool Scout</h1>
     <p>Check if the talent exists before you open the role &nbsp;·&nbsp; LinkedIn Recruiter</p>
+  </div>
+  <button class="settings-btn" onclick="toggleSettings()">
+    <span class="ai-dot" id="ai-dot"></span>
+    <span id="ai-btn-label">⚙️ Connect Gemini</span>
+  </button>
+</div>
+
+<!-- ── Settings Overlay ── -->
+<div class="settings-overlay" id="settings-overlay" onclick="overlayClick(event)">
+  <div class="settings-panel" id="settings-panel">
+    <button class="settings-close" onclick="toggleSettings()">✕</button>
+    <h2>⚙️ AI Settings</h2>
+    <p class="settings-sub">Connect Google Gemini to enable smart JD parsing, boolean refinement, and auto-report writing — all for free.</p>
+
+    <div class="settings-section">
+      <div class="settings-label">Your Gemini API Key</div>
+      <div class="settings-desc">Saved only in <strong>your browser</strong>. Never shared with anyone — it goes directly from your browser to Google's Gemini API.</div>
+      <div class="api-input-row">
+        <input class="api-input" type="password" id="api-key-input" placeholder="Paste your key here  (AIza…)" autocomplete="off" />
+        <button class="btn-save-key" onclick="saveApiKey()">Save</button>
+      </div>
+      <div class="key-status" id="key-status" style="display:none"></div>
+      <button class="btn-clear-key" id="btn-clear-key" onclick="clearApiKey()">Remove saved key</button>
+    </div>
+
+    <hr class="settings-divider" />
+
+    <div class="settings-section">
+      <div class="settings-label">How to get your free API key</div>
+      <div class="how-step">
+        <span class="how-num">1</span>
+        <span class="how-text">Go to <a href="https://aistudio.google.com" target="_blank">aistudio.google.com</a> and sign in with your Google or Workspace account</span>
+      </div>
+      <div class="how-step">
+        <span class="how-num">2</span>
+        <span class="how-text">Click <strong>"Get API Key"</strong> in the left sidebar, then click <strong>"Create API key"</strong></span>
+      </div>
+      <div class="how-step">
+        <span class="how-num">3</span>
+        <span class="how-text">Copy the key — it starts with <code>AIza</code> and is about 40 characters long</span>
+      </div>
+      <div class="how-step">
+        <span class="how-num">4</span>
+        <span class="how-text">Paste it in the field above and click <strong>Save</strong>. Done — the key is free and works for hundreds of searches per day.</span>
+      </div>
+    </div>
+
+    <hr class="settings-divider" />
+
+    <div class="settings-section">
+      <div class="settings-label">What AI unlocks</div>
+      <div class="settings-desc" style="line-height:2">
+        ✅ <strong>Smart JD Scan</strong> — Gemini reads the JD like a recruiter, no more garbage tags<br>
+        ✅ <strong>Refine Boolean</strong> — AI reviews your search string and suggests improvements<br>
+        ✅ <strong>Auto Report Narrative</strong> — report writes itself, no manual input needed
+      </div>
+      <div class="settings-desc" style="color:#9CA3AF;margin-top:4px">Without a key, the tool works exactly as before using the built-in keyword scanner.</div>
+    </div>
   </div>
 </div>
 
@@ -269,8 +410,8 @@
       <textarea class="jd-textarea" id="jd-text"
         placeholder="Paste the job description text here (copy from any job site, email, or doc)…"></textarea>
       <div class="jd-row">
-        <button class="btn-parse" onclick="parseJD()">🪄 Scan &amp; Fill Form</button>
-        <span class="parse-hint">Works offline · no API needed</span>
+        <button class="btn-parse" id="btn-scan" onclick="parseJD()">🪄 Scan &amp; Fill Form</button>
+        <span class="parse-hint" id="parse-hint">Works offline · no API needed</span>
       </div>
       <div class="parse-status" id="parse-status"></div>
     </div>
@@ -675,9 +816,9 @@ function findSectionRange(text, sectionRx) {
 }
 
 // ═══════════════════════════════════════════════
-//  JD SCANNER — universal, no API needed
+//  JD SCANNER — AI-powered (Gemini) or keyword fallback
 // ═══════════════════════════════════════════════
-function parseJD() {
+async function parseJD() {
   const text = document.getElementById('jd-text').value.trim();
   if (!text || text.length < 50) {
     showStatus('error', '⚠️ Please paste a job description first (at least a few lines).');
@@ -697,6 +838,16 @@ function parseJD() {
     return;
   }
 
+  // ── Route to Gemini if API key is present ──
+  if (getApiKey()) {
+    await parseJDWithAI(text);
+    return;
+  }
+
+  parseJDKeyword(text);
+}
+
+function parseJDKeyword(text) {
   const lower = text.toLowerCase();
   const lines = text.split('\n');
 
@@ -912,6 +1063,204 @@ function showStatus(type, msg) {
   const el = document.getElementById('parse-status');
   el.className = 'parse-status ' + type;
   el.innerHTML = msg;
+}
+
+// ═══════════════════════════════════════════════
+//  GEMINI AI — KEY MANAGEMENT
+// ═══════════════════════════════════════════════
+function getApiKey() { return localStorage.getItem('tps_gemini_key') || ''; }
+
+function saveApiKey() {
+  const key = document.getElementById('api-key-input').value.trim();
+  if (!key) { alert('Please paste your Gemini API key first.'); return; }
+  if (!key.startsWith('AIza')) {
+    alert('That doesn\'t look right. Your Gemini API key should start with "AIza". Check you copied the full key from Google AI Studio.');
+    return;
+  }
+  localStorage.setItem('tps_gemini_key', key);
+  document.getElementById('api-key-input').value = '';
+  updateAiStatus();
+  renderKeyStatus();
+}
+
+function clearApiKey() {
+  if (!confirm('Remove your saved API key? You can add it again any time.')) return;
+  localStorage.removeItem('tps_gemini_key');
+  updateAiStatus();
+  renderKeyStatus();
+}
+
+function renderKeyStatus() {
+  const el = document.getElementById('key-status');
+  const clearBtn = document.getElementById('btn-clear-key');
+  const key = getApiKey();
+  el.style.display = 'block';
+  if (key) {
+    el.className = 'key-status set';
+    el.textContent = '✅ Key saved — ' + key.slice(0,8) + '••••' + key.slice(-4) + '  ·  Gemini AI is active';
+    clearBtn.style.display = 'inline';
+  } else {
+    el.className = 'key-status unset';
+    el.textContent = '⚠️ No API key saved yet. Follow the steps above to get your free key.';
+    clearBtn.style.display = 'none';
+  }
+}
+
+function updateAiStatus() {
+  const hasKey = !!getApiKey();
+  const dot = document.getElementById('ai-dot');
+  const label = document.getElementById('ai-btn-label');
+  if (dot)   dot.className = hasKey ? 'ai-dot on' : 'ai-dot';
+  if (label) label.textContent = hasKey ? '🟢 Gemini Connected' : '⚙️ Connect Gemini';
+  const hint = document.getElementById('parse-hint');
+  if (hint)  hint.textContent = hasKey ? '✨ AI-powered · Gemini 1.5 Flash' : 'Works offline · no API needed';
+}
+
+function toggleSettings() {
+  const ov = document.getElementById('settings-overlay');
+  const opening = !ov.classList.contains('open');
+  ov.classList.toggle('open');
+  if (opening) renderKeyStatus();
+}
+
+function overlayClick(e) {
+  if (e.target === document.getElementById('settings-overlay')) toggleSettings();
+}
+
+// ═══════════════════════════════════════════════
+//  GEMINI AI — API CALL
+// ═══════════════════════════════════════════════
+async function geminiCall(prompt) {
+  const key = getApiKey();
+  if (!key) throw new Error('No API key set');
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    }
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    const msg = err?.error?.message || `API error ${res.status}`;
+    if (res.status === 400) throw new Error('Invalid API key. Please check your key in ⚙️ Connect Gemini.');
+    if (res.status === 403) throw new Error('API key not authorised. Make sure Generative Language API is enabled in your Google Cloud project.');
+    throw new Error(msg);
+  }
+  const data = await res.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+}
+
+// ═══════════════════════════════════════════════
+//  GEMINI AI — JD PARSER
+// ═══════════════════════════════════════════════
+async function parseJDWithAI(text) {
+  const btn = document.getElementById('btn-scan');
+  btn.innerHTML = '<span class="ai-spinner"></span> Gemini is reading the JD…';
+  btn.disabled = true;
+  showStatus('warn', '<span class="ai-spinner"></span> Asking Gemini to extract hiring criteria — usually takes 3–5 seconds…');
+
+  const prompt = `You are an expert technical recruiter. Carefully read this job description and extract the hiring criteria.
+
+Return ONLY valid JSON — no markdown, no code blocks, no explanation. Use exactly this structure:
+{
+  "role": "Job Title here",
+  "experience_min": 3,
+  "experience_max": 7,
+  "must_have": ["Python", "AWS", "Kubernetes"],
+  "good_to_have": ["Terraform", "Go", "Datadog"],
+  "keywords": ["cloud-native architecture", "distributed systems"],
+  "locations": ["Bangalore", "Hyderabad"]
+}
+
+Rules:
+- role: the job title only, no company name
+- must_have: 3–8 hard technical skills that are explicitly required. No soft skills (e.g. "communication"). No verbs. No sentences. Short skill names only (e.g. "Python" not "Strong Python programming skills").
+- good_to_have: 2–6 preferred technical skills not in must_have
+- keywords: 2–4 multi-word domain or context phrases that signal strong fit (e.g. "full-cycle recruiting", "pre-sales engineering", "data pipeline"). Do not repeat skills.
+- locations: only cities/regions explicitly mentioned. Empty array [] if none stated.
+- experience_min, experience_max: integers. Use 0 if not mentioned.
+
+Job Description:
+${text}`;
+
+  try {
+    const raw = await geminiCall(prompt);
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('Gemini returned an unexpected format. Try again.');
+    const parsed = JSON.parse(jsonMatch[0]);
+
+    // Fill form
+    if (parsed.role)           document.getElementById('f-role').value = parsed.role;
+    if (parsed.experience_min) document.getElementById('f-exp-min').value = parsed.experience_min;
+    if (parsed.experience_max) document.getElementById('f-exp-max').value = parsed.experience_max;
+
+    // Clear and repopulate tags
+    ['must','good','kw','loc'].forEach(k => { S[k] = []; renderTags(k); });
+    (parsed.must_have    || []).forEach(s => addTag('must', s));
+    (parsed.good_to_have || []).forEach(s => addTag('good', s));
+    (parsed.keywords     || []).forEach(s => addTag('kw',   s));
+    (parsed.locations    || []).forEach(s => addTag('loc',  s));
+
+    const total = (parsed.must_have||[]).length + (parsed.good_to_have||[]).length + (parsed.keywords||[]).length;
+    showStatus('success',
+      `✨ Gemini extracted ${total} criteria — <strong>${(parsed.must_have||[]).length} must-haves</strong>, ${(parsed.good_to_have||[]).length} good-to-have, ${(parsed.keywords||[]).length} keywords. Review the tags below, then click Generate.`
+    );
+  } catch(e) {
+    showStatus('warn', `⚠️ Gemini error: ${e.message}<br>Falling back to the built-in keyword scanner…`);
+    parseJDKeyword(text);
+  } finally {
+    btn.innerHTML = '🪄 Scan &amp; Fill Form';
+    btn.disabled = false;
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  GEMINI AI — BOOLEAN REFINER
+// ═══════════════════════════════════════════════
+async function refineBoolean() {
+  const btn = event.target;
+  const resultBox = document.getElementById('refine-result');
+  const role   = document.getElementById('f-role').value.trim() || 'this role';
+  const expMin = document.getElementById('f-exp-min').value.trim();
+  const expMax = document.getElementById('f-exp-max').value.trim();
+  const bool   = buildBoolean();
+
+  btn.innerHTML = '<span class="ai-spinner"></span> Asking Gemini…';
+  btn.disabled  = true;
+  resultBox.style.display = 'none';
+
+  const prompt = `You are a LinkedIn Recruiter boolean search expert.
+
+Role: ${role}
+Experience: ${expMin||'?'}–${expMax||'?'} years
+Must-Have Skills: ${S.must.join(', ') || 'none'}
+Good-to-Have: ${S.good.join(', ') || 'none'}
+JD Keywords: ${S.kw.join(', ') || 'none'}
+Locations: ${S.loc.join(', ') || 'not specified'}
+
+Current boolean string:
+${bool}
+
+Please:
+1. Review the boolean string for any issues (too broad, too narrow, missing important synonyms, incorrect syntax)
+2. Suggest 2–3 specific improvements with a brief reason for each
+3. Provide one alternative boolean variation that might surface different but equally qualified profiles
+
+Keep your response practical and concise — these are non-technical HR users.`;
+
+  try {
+    const result = await geminiCall(prompt);
+    resultBox.style.display = 'block';
+    resultBox.textContent = result;
+  } catch(e) {
+    resultBox.style.display = 'block';
+    resultBox.textContent = '⚠️ Gemini error: ' + e.message;
+  } finally {
+    btn.innerHTML = '✨ Refine with Gemini';
+    btn.disabled  = false;
+  }
 }
 
 // ═══════════════════════════════════════════════
@@ -1168,7 +1517,9 @@ function generate() {
           Open LinkedIn Recruiter
         </a>
         <button class="btn-copy" onclick="copyBool()">📋 Copy String</button>
+        ${getApiKey() ? `<button class="btn-refine" onclick="refineBoolean()">✨ Refine with Gemini</button>` : ''}
       </div>
+      <div class="refine-result" id="refine-result"></div>
       ${S.loc.length?`<div class="notice amber">💡 <strong>Location tip:</strong> Use LinkedIn Recruiter's <strong>Location filter</strong> for <em>${S.loc.join(', ')}</em> — don't include it in the keyword box.</div>`:''}
     </div>
     <div class="card">
@@ -1652,6 +2003,7 @@ function esc(s) {
 }
 
 updateBadge();
+updateAiStatus();
 </script>
 </body>
 </html>
