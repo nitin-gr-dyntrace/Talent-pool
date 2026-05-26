@@ -299,6 +299,14 @@
     }
     .settings-close:hover { color:#1A1A2E; }
     .settings-divider { border:none; border-top:1px solid #F3F4F6; margin:0 0 20px; }
+    .provider-card {
+      border:2px solid #E4E7EB; border-radius:9px; padding:12px 14px;
+      cursor:pointer; transition:all 0.15s; background:#fff;
+    }
+    .provider-card:hover { border-color:#C7CDFC; background:#FAFAFE; }
+    .provider-card.active { border-color:#5B6CF6; background:#EEF0FE; }
+    .provider-name { font-size:13px; font-weight:700; margin-bottom:4px; }
+    .provider-desc { font-size:11px; color:#6B7280; line-height:1.5; }
     /* ── AI Spinner ── */
     @keyframes spin { to { transform:rotate(360deg); } }
     .ai-spinner {
@@ -430,39 +438,56 @@
   <div class="settings-panel" id="settings-panel">
     <button class="settings-close" onclick="toggleSettings()">✕</button>
     <h2>⚙️ AI Settings</h2>
-    <p class="settings-sub">Connect Google Gemini to enable smart JD parsing, boolean refinement, and auto-report writing — all for free.</p>
+    <p class="settings-sub">Connect an AI provider to enable smart JD parsing, boolean refinement, and the Talent Intelligence Report.</p>
 
+    <!-- Provider selector -->
     <div class="settings-section">
-      <div class="settings-label">Your Gemini API Key</div>
-      <div class="settings-desc">Saved only in <strong>your browser</strong>. Never shared with anyone — it goes directly from your browser to Google's Gemini API.</div>
+      <div class="settings-label">Choose Your AI Provider</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+        <div class="provider-card" id="pcard-gemini" onclick="selectProvider('gemini')">
+          <div class="provider-name">🔵 Google Gemini</div>
+          <div class="provider-desc">Free API key from Google AI Studio. 1,000 calls/day free.</div>
+        </div>
+        <div class="provider-card" id="pcard-github" onclick="selectProvider('github')">
+          <div class="provider-name">🐙 GitHub Copilot</div>
+          <div class="provider-desc">Use your existing Enterprise licence. GitHub PAT token — no extra cost.</div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="settings-divider" />
+
+    <!-- Gemini section -->
+    <div id="section-gemini" class="settings-section">
+      <div class="settings-label">Google Gemini API Key</div>
+      <div class="settings-desc">Your key is saved only in <strong>your browser</strong> and goes directly to Google. Never shared with anyone.</div>
       <div class="api-input-row">
         <input class="api-input" type="password" id="api-key-input" placeholder="Paste your key here  (AIza…)" autocomplete="off" />
         <button class="btn-save-key" onclick="saveApiKey()">Save</button>
       </div>
       <div class="key-status" id="key-status" style="display:none"></div>
       <button class="btn-clear-key" id="btn-clear-key" onclick="clearApiKey()">Remove saved key</button>
+      <div class="settings-label" style="margin-top:16px">How to get your free Gemini key</div>
+      <div class="how-step"><span class="how-num">1</span><span class="how-text">Go to <a href="https://aistudio.google.com" target="_blank">aistudio.google.com</a> and sign in with your Google / Workspace account</span></div>
+      <div class="how-step"><span class="how-num">2</span><span class="how-text">Click <strong>"Get API Key"</strong> in the left sidebar → <strong>"Create API key"</strong></span></div>
+      <div class="how-step"><span class="how-num">3</span><span class="how-text">Copy the key (starts with <code>AIza</code>) → paste above → click <strong>Save</strong></span></div>
     </div>
 
-    <hr class="settings-divider" />
-
-    <div class="settings-section">
-      <div class="settings-label">How to get your free API key</div>
-      <div class="how-step">
-        <span class="how-num">1</span>
-        <span class="how-text">Go to <a href="https://aistudio.google.com" target="_blank">aistudio.google.com</a> and sign in with your Google or Workspace account</span>
+    <!-- GitHub section -->
+    <div id="section-github" class="settings-section" style="display:none">
+      <div class="settings-label">GitHub Personal Access Token (PAT)</div>
+      <div class="settings-desc">Uses your existing GitHub Copilot Enterprise licence. Your token is saved only in <strong>your browser</strong>.</div>
+      <div class="api-input-row">
+        <input class="api-input" type="password" id="api-key-input-gh" placeholder="Paste your GitHub token  (github_pat_… or ghp_…)" autocomplete="off" />
+        <button class="btn-save-key" onclick="saveApiKeyGH()">Save</button>
       </div>
-      <div class="how-step">
-        <span class="how-num">2</span>
-        <span class="how-text">Click <strong>"Get API Key"</strong> in the left sidebar, then click <strong>"Create API key"</strong></span>
-      </div>
-      <div class="how-step">
-        <span class="how-num">3</span>
-        <span class="how-text">Copy the key — it starts with <code>AIza</code> and is about 40 characters long</span>
-      </div>
-      <div class="how-step">
-        <span class="how-num">4</span>
-        <span class="how-text">Paste it in the field above and click <strong>Save</strong>. Done — the key is free and works for hundreds of searches per day.</span>
-      </div>
+      <div class="key-status" id="key-status-gh" style="display:none"></div>
+      <button class="btn-clear-key" id="btn-clear-key-gh" onclick="clearApiKeyGH()">Remove saved token</button>
+      <div class="settings-label" style="margin-top:16px">How to create a GitHub PAT</div>
+      <div class="how-step"><span class="how-num">1</span><span class="how-text">Go to <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a> and click <strong>"Generate new token (classic)"</strong></span></div>
+      <div class="how-step"><span class="how-num">2</span><span class="how-text">Give it a name like <em>Talent Scout</em>. No special scopes needed — leave all checkboxes unchecked.</span></div>
+      <div class="how-step"><span class="how-num">3</span><span class="how-text">Click <strong>"Generate token"</strong>, copy it (starts with <code>ghp_</code>) → paste above → click <strong>Save</strong></span></div>
+      <div class="how-step"><span class="how-num">4</span><span class="how-text">Your Copilot Enterprise licence is linked to your GitHub account — this token gives the tool access to GitHub Models (GPT-4o-mini).</span></div>
     </div>
 
     <hr class="settings-divider" />
@@ -470,11 +495,11 @@
     <div class="settings-section">
       <div class="settings-label">What AI unlocks</div>
       <div class="settings-desc" style="line-height:2">
-        ✅ <strong>Smart JD Scan</strong> — Gemini reads the JD like a recruiter, no more garbage tags<br>
+        ✅ <strong>Smart JD Scan</strong> — AI reads the JD like a recruiter, no more garbage tags<br>
         ✅ <strong>Refine Boolean</strong> — AI reviews your search string and suggests improvements<br>
-        ✅ <strong>Auto Report Narrative</strong> — report writes itself, no manual input needed
+        ✅ <strong>Talent Intelligence Report</strong> — full hiring manager table generated in 10 seconds
       </div>
-      <div class="settings-desc" style="color:#9CA3AF;margin-top:4px">Without a key, the tool works exactly as before using the built-in keyword scanner.</div>
+      <div class="settings-desc" style="color:#9CA3AF;margin-top:4px">Without a key, the tool works as before using the built-in keyword scanner.</div>
     </div>
   </div>
 </div>
@@ -1206,54 +1231,118 @@ function showStatus(type, msg) {
 }
 
 // ═══════════════════════════════════════════════
-//  GEMINI AI — KEY MANAGEMENT
+//  AI — KEY MANAGEMENT (Gemini + GitHub)
 // ═══════════════════════════════════════════════
-function getApiKey() { return localStorage.getItem('tps_gemini_key') || ''; }
+function getApiKey() {
+  const provider = localStorage.getItem('tps_ai_provider') || 'gemini';
+  return provider === 'github'
+    ? localStorage.getItem('tps_github_key') || ''
+    : localStorage.getItem('tps_gemini_key') || '';
+}
+
+function selectProvider(p) {
+  localStorage.setItem('tps_ai_provider', p);
+  document.getElementById('pcard-gemini').classList.toggle('active', p==='gemini');
+  document.getElementById('pcard-github').classList.toggle('active', p==='github');
+  document.getElementById('section-gemini').style.display = p==='gemini' ? 'block' : 'none';
+  document.getElementById('section-github').style.display = p==='github' ? 'block' : 'none';
+  renderKeyStatus();
+  updateAiStatus();
+}
 
 function saveApiKey() {
   const key = document.getElementById('api-key-input').value.trim();
   if (!key) { alert('Please paste your Gemini API key first.'); return; }
-  if (!key.startsWith('AIza')) {
-    alert('That doesn\'t look right. Your Gemini API key should start with "AIza". Check you copied the full key from Google AI Studio.');
-    return;
-  }
+  if (!key.startsWith('AIza')) { alert('Gemini keys start with "AIza". Check you copied the full key from Google AI Studio.'); return; }
   localStorage.setItem('tps_gemini_key', key);
+  localStorage.setItem('tps_ai_provider', 'gemini');
   document.getElementById('api-key-input').value = '';
-  updateAiStatus();
-  renderKeyStatus();
+  updateAiStatus(); renderKeyStatus();
 }
 
 function clearApiKey() {
-  if (!confirm('Remove your saved API key? You can add it again any time.')) return;
+  if (!confirm('Remove your saved Gemini key?')) return;
   localStorage.removeItem('tps_gemini_key');
-  updateAiStatus();
-  renderKeyStatus();
+  updateAiStatus(); renderKeyStatus();
+}
+
+function saveApiKeyGH() {
+  const key = document.getElementById('api-key-input-gh').value.trim();
+  if (!key) { alert('Please paste your GitHub token first.'); return; }
+  if (!key.startsWith('ghp_') && !key.startsWith('github_pat_') && !key.startsWith('gho_')) {
+    alert('GitHub tokens usually start with "ghp_" or "github_pat_". Double-check you copied the full token.');
+    return;
+  }
+  localStorage.setItem('tps_github_key', key);
+  localStorage.setItem('tps_ai_provider', 'github');
+  document.getElementById('api-key-input-gh').value = '';
+  updateAiStatus(); renderKeyStatus();
+}
+
+function clearApiKeyGH() {
+  if (!confirm('Remove your saved GitHub token?')) return;
+  localStorage.removeItem('tps_github_key');
+  updateAiStatus(); renderKeyStatus();
 }
 
 function renderKeyStatus() {
-  const el = document.getElementById('key-status');
-  const clearBtn = document.getElementById('btn-clear-key');
-  const key = getApiKey();
-  el.style.display = 'block';
-  if (key) {
-    el.className = 'key-status set';
-    el.textContent = '✅ Key saved — ' + key.slice(0,8) + '••••' + key.slice(-4) + '  ·  Gemini AI is active';
-    clearBtn.style.display = 'inline';
-  } else {
-    el.className = 'key-status unset';
-    el.textContent = '⚠️ No API key saved yet. Follow the steps above to get your free key.';
-    clearBtn.style.display = 'none';
+  const provider = localStorage.getItem('tps_ai_provider') || 'gemini';
+  // Gemini status
+  const gemKey = localStorage.getItem('tps_gemini_key') || '';
+  const elG = document.getElementById('key-status');
+  const cbG = document.getElementById('btn-clear-key');
+  if (elG) {
+    elG.style.display = 'block';
+    if (gemKey) {
+      elG.className = 'key-status set';
+      elG.textContent = '✅ Gemini key saved — ' + gemKey.slice(0,8) + '••••' + gemKey.slice(-4);
+      cbG.style.display = 'inline';
+    } else {
+      elG.className = 'key-status unset';
+      elG.textContent = '⚠️ No Gemini key saved yet.';
+      cbG.style.display = 'none';
+    }
   }
+  // GitHub status
+  const ghKey = localStorage.getItem('tps_github_key') || '';
+  const elGH = document.getElementById('key-status-gh');
+  const cbGH = document.getElementById('btn-clear-key-gh');
+  if (elGH) {
+    elGH.style.display = 'block';
+    if (ghKey) {
+      elGH.className = 'key-status set';
+      elGH.textContent = '✅ GitHub token saved — ' + ghKey.slice(0,8) + '••••' + ghKey.slice(-4);
+      cbGH.style.display = 'inline';
+    } else {
+      elGH.className = 'key-status unset';
+      elGH.textContent = '⚠️ No GitHub token saved yet.';
+      cbGH.style.display = 'none';
+    }
+  }
+  // Highlight active provider card
+  const p = localStorage.getItem('tps_ai_provider') || 'gemini';
+  const pcG = document.getElementById('pcard-gemini');
+  const pcGH = document.getElementById('pcard-github');
+  if (pcG)  pcG.classList.toggle('active', p==='gemini');
+  if (pcGH) pcGH.classList.toggle('active', p==='github');
+  const sgem = document.getElementById('section-gemini');
+  const sgh  = document.getElementById('section-github');
+  if (sgem) sgem.style.display = p==='gemini' ? 'block' : 'none';
+  if (sgh)  sgh.style.display  = p==='github'  ? 'block' : 'none';
 }
 
 function updateAiStatus() {
-  const hasKey = !!getApiKey();
-  const dot = document.getElementById('ai-dot');
+  const provider = localStorage.getItem('tps_ai_provider') || 'gemini';
+  const gemKey = localStorage.getItem('tps_gemini_key') || '';
+  const ghKey  = localStorage.getItem('tps_github_key')  || '';
+  const hasKey  = provider==='github' ? !!ghKey : !!gemKey;
+  const providerLabel = provider==='github' ? 'Copilot' : 'Gemini';
+  const dot   = document.getElementById('ai-dot');
   const label = document.getElementById('ai-btn-label');
   if (dot)   dot.className = hasKey ? 'ai-dot on' : 'ai-dot';
-  if (label) label.textContent = hasKey ? '🟢 Gemini Connected' : '⚙️ Connect Gemini';
+  if (label) label.textContent = hasKey ? `🟢 ${providerLabel} Connected` : '⚙️ Connect AI';
   const hint = document.getElementById('parse-hint');
-  if (hint)  hint.textContent = hasKey ? '✨ AI-powered · Gemini 2.0 Flash' : 'Works offline · no API needed';
+  if (hint)  hint.textContent = hasKey ? `✨ AI-powered · ${provider==='github' ? 'GitHub Copilot (GPT-4o-mini)' : 'Gemini Flash'}` : 'Works offline · no API needed';
 }
 
 function toggleSettings() {
@@ -1273,23 +1362,50 @@ function overlayClick(e) {
 async function geminiCall(prompt) {
   const key = getApiKey();
   if (!key) throw new Error('No API key set');
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
-    {
+  const provider = localStorage.getItem('tps_ai_provider') || 'gemini';
+
+  if (provider === 'github') {
+    // ── GitHub Models (Copilot Enterprise) ──
+    const res = await fetch('https://models.inference.ai.azure.com/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 2500, temperature: 0.3
+      })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      const msg = err?.error?.message || `GitHub Models error ${res.status}`;
+      if (res.status === 401) throw new Error('Invalid GitHub token. Check your PAT in ⚙️ AI Settings.');
+      if (res.status === 403) throw new Error('Token lacks access to GitHub Models. Ensure your PAT has the right permissions.');
+      throw new Error(msg);
     }
-  );
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    const msg = err?.error?.message || `API error ${res.status}`;
-    if (res.status === 400) throw new Error('Invalid API key. Please check your key in ⚙️ Connect Gemini.');
-    if (res.status === 403) throw new Error('API key not authorised. Make sure Generative Language API is enabled in your Google Cloud project.');
-    throw new Error(msg);
+    const data = await res.json();
+    return data.choices?.[0]?.message?.content || '';
+
+  } else {
+    // ── Google Gemini ──
+    const model = 'gemini-1.5-flash-8b';   // free tier: 1000 req/day
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+      }
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      const msg = err?.error?.message || `Gemini error ${res.status}`;
+      if (res.status === 400) throw new Error('Invalid API key. Check your key in ⚙️ AI Settings.');
+      if (res.status === 429) throw new Error('Quota exceeded. Switch to GitHub Copilot in ⚙️ AI Settings, or wait and retry.');
+      throw new Error(msg);
+    }
+    const data = await res.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
   }
-  const data = await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 }
 
 // ═══════════════════════════════════════════════
