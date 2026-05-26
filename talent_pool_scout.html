@@ -444,13 +444,13 @@
     <div class="settings-section">
       <div class="settings-label">Choose Your AI Provider</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
-        <div class="provider-card" id="pcard-groq" onclick="selectProvider('groq')" style="border-color:#10B981;background:#F0FDF4">
-          <div class="provider-name">⚡ Groq <span style="font-size:10px;background:#10B981;color:#fff;padding:1px 6px;border-radius:8px;font-weight:700;margin-left:4px">RECOMMENDED</span></div>
-          <div class="provider-desc">100% free, no credit card. Fastest AI available. Sign up at console.groq.com in 30 seconds.</div>
+        <div class="provider-card" id="pcard-gemini" onclick="selectProvider('gemini')" style="border-color:#5B6CF6;background:#EEF0FE">
+          <div class="provider-name">🔵 Google Gemini <span style="font-size:10px;background:#5B6CF6;color:#fff;padding:1px 6px;border-radius:8px;font-weight:700;margin-left:4px">RECOMMENDED</span></div>
+          <div class="provider-desc">Free API key from Google AI Studio. 1,500 calls/day — no credit card needed.</div>
         </div>
-        <div class="provider-card" id="pcard-gemini" onclick="selectProvider('gemini')">
-          <div class="provider-name">🔵 Google Gemini</div>
-          <div class="provider-desc">Free API key from Google AI Studio (aistudio.google.com). 1,500 calls/day.</div>
+        <div class="provider-card" id="pcard-groq" onclick="selectProvider('groq')" style="opacity:0.5;cursor:not-allowed">
+          <div class="provider-name">⚡ Groq <span style="font-size:10px;background:#9CA3AF;color:#fff;padding:1px 6px;border-radius:8px;font-weight:700;margin-left:4px">BROWSER BLOCKED</span></div>
+          <div class="provider-desc">Groq blocks browser calls — does not work in this tool. Use Gemini instead.</div>
         </div>
         <div class="provider-card" id="pcard-github" onclick="selectProvider('github')">
           <div class="provider-name">🐙 GitHub Copilot</div>
@@ -487,10 +487,18 @@
       </div>
       <div class="key-status" id="key-status" style="display:none"></div>
       <button class="btn-clear-key" id="btn-clear-key" onclick="clearApiKey()">Remove saved key</button>
-      <div class="settings-label" style="margin-top:16px">How to get your free Gemini key</div>
-      <div class="how-step"><span class="how-num">1</span><span class="how-text">Go to <a href="https://aistudio.google.com" target="_blank">aistudio.google.com</a> and sign in with your Google / Workspace account</span></div>
-      <div class="how-step"><span class="how-num">2</span><span class="how-text">Click <strong>"Get API Key"</strong> in the left sidebar → <strong>"Create API key"</strong></span></div>
-      <div class="how-step"><span class="how-num">3</span><span class="how-text">Copy the key (starts with <code>AIza</code>) → paste above → click <strong>Save</strong></span></div>
+      <div style="margin-top:10px">
+        <button class="btn-save-key" style="background:#10B981" onclick="testGeminiKey()">🧪 Test Key</button>
+        <div class="key-status" id="key-test-result" style="display:none;margin-top:8px"></div>
+      </div>
+
+      <div class="settings-label" style="margin-top:20px">⚠️ How to get the RIGHT key (read carefully)</div>
+      <div class="settings-desc" style="background:#FEF2F2;border:1px solid #FECACA;border-radius:7px;padding:10px 12px;color:#991B1B;margin-bottom:12px">
+        <strong>Do NOT use Google Cloud Console.</strong> Keys from there have zero quota and won't work. You MUST use AI Studio.
+      </div>
+      <div class="how-step"><span class="how-num">1</span><span class="how-text">Go to exactly this URL: <a href="https://aistudio.google.com/apikey" target="_blank"><strong>aistudio.google.com/apikey</strong></a></span></div>
+      <div class="how-step"><span class="how-num">2</span><span class="how-text">Click <strong>"Create API key"</strong> → select <strong>"Create API key in new project"</strong> (not any existing project)</span></div>
+      <div class="how-step"><span class="how-num">3</span><span class="how-text">Copy the key → paste above → click <strong>Save</strong> → click <strong>🧪 Test Key</strong> to confirm it works</span></div>
     </div>
 
     <!-- GitHub section -->
@@ -1304,6 +1312,30 @@ function clearApiKey() {
   updateAiStatus(); renderKeyStatus();
 }
 
+async function testGeminiKey() {
+  const key = localStorage.getItem('tps_gemini_key') || document.getElementById('api-key-input').value.trim();
+  const el = document.getElementById('key-test-result');
+  if (!key) { el.style.display='block'; el.className='key-status unset'; el.textContent='⚠️ No key saved yet. Paste your key above and click Save first.'; return; }
+  el.style.display='block'; el.className='key-status'; el.innerHTML='<span class="ai-spinner"></span> Testing…';
+  const MODELS = ['gemini-2.5-flash','gemini-2.5-flash-preview-04-17','gemini-2.0-flash','gemini-2.0-flash-lite','gemini-2.0-flash-exp'];
+  for (const model of MODELS) {
+    try {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({contents:[{parts:[{text:'Reply with exactly the word: WORKING'}]}]})
+      });
+      const body = await res.json().catch(()=>({}));
+      const errMsg = body?.error?.message || '';
+      if (res.status === 400 && errMsg.toLowerCase().includes('not found')) continue;
+      if (res.status === 400) { el.className='key-status unset'; el.textContent='❌ Invalid API key. Make sure you created it at aistudio.google.com/apikey.'; return; }
+      if (res.status === 429) { el.className='key-status unset'; el.textContent='❌ Quota is 0. This is a Google Cloud Console key — it won\'t work. Create a fresh key at aistudio.google.com/apikey.'; return; }
+      if (!res.ok) continue;
+      el.className='key-status set'; el.textContent=`✅ Key works! Connected to ${model}. AI features are ready.`; return;
+    } catch(e) { el.className='key-status unset'; el.textContent='❌ Network error — could not reach Google. Check your internet connection.'; return; }
+  }
+  el.className='key-status unset'; el.textContent='❌ No Gemini model available for this key. Try creating a fresh key at aistudio.google.com/apikey.';
+}
+
 function saveApiKeyGH() {
   const key = document.getElementById('api-key-input-gh').value.trim();
   if (!key) { alert('Please paste your GitHub token first.'); return; }
@@ -1442,59 +1474,44 @@ async function geminiCall(prompt) {
     return data.choices?.[0]?.message?.content || '';
 
   } else if (provider === 'groq') {
-    // ── Groq (free, fast — recommended) ──
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-      body: JSON.stringify({
-        model: 'llama-3.1-8b-instant',
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 2500, temperature: 0.3
-      })
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      if (res.status === 401) throw new Error('Invalid Groq API key. Paste your key from console.groq.com → API Keys.');
-      if (res.status === 429) throw new Error('Groq rate limit hit. Wait a few seconds and try again.');
-      throw new Error(err?.error?.message || `Groq error ${res.status}`);
-    }
-    const data = await res.json();
-    return data.choices?.[0]?.message?.content || '';
+    throw new Error('Groq cannot be called from a browser — it blocks cross-origin requests. Please switch to Google Gemini in ⚙️ AI Settings.');
 
   } else {
-    // ── Google Gemini — try models in order until one works ──
+    // ── Google Gemini — try current models in order ──
     const MODELS = [
-      'gemini-2.0-flash-lite',
+      'gemini-2.5-flash',
+      'gemini-2.5-flash-preview-04-17',
       'gemini-2.0-flash',
+      'gemini-2.0-flash-lite',
       'gemini-2.0-flash-exp',
-      'gemini-1.5-flash',
-      'gemini-1.5-pro',
     ];
     let lastErr = '';
     for (const model of MODELS) {
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-        }
-      );
-      if (res.status === 400) {
-        const err = await res.json().catch(()=>({}));
-        throw new Error('Invalid API key — ' + (err?.error?.message || 'check your key in ⚙️ AI Settings'));
+      let res;
+      try {
+        res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+          }
+        );
+      } catch(netErr) {
+        throw new Error('Network error — could not reach Google Gemini. Check your internet connection.');
       }
-      if (res.status === 404) { lastErr = `${model} not available`; continue; } // try next
-      if (res.status === 429) throw new Error('Quota exceeded on your Gemini account. Make sure you created the API key at aistudio.google.com (not Google Cloud Console). See ⚙️ AI Settings for steps.');
-      if (!res.ok) {
-        const err = await res.json().catch(()=>({}));
-        lastErr = err?.error?.message || `error ${res.status}`;
-        continue;
+      const body = await res.json().catch(() => ({}));
+      const errMsg = body?.error?.message || '';
+      // Model not available — try the next one
+      if (res.status === 404 || (res.status === 400 && errMsg.toLowerCase().includes('not found'))) {
+        lastErr = model + ' not available'; continue;
       }
-      const data = await res.json();
-      return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      if (res.status === 400) throw new Error('Invalid API key. Open ⚙️ AI Settings and check your key — make sure it was created at aistudio.google.com.');
+      if (res.status === 429) throw new Error('Quota exceeded. Your API key must come from aistudio.google.com (not Google Cloud Console). See ⚙️ AI Settings → "How to get your key".');
+      if (!res.ok) { lastErr = errMsg || `HTTP ${res.status}`; continue; }
+      return body.candidates?.[0]?.content?.parts?.[0]?.text || '';
     }
-    throw new Error('No Gemini model available for your key. ' + lastErr + '. Make sure you created the key at aistudio.google.com.');
+    throw new Error('No working Gemini model found. ' + (lastErr ? '(' + lastErr + ') ' : '') + 'Create a fresh key at aistudio.google.com — see ⚙️ AI Settings.');
   }
 }
 
