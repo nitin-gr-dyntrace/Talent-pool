@@ -226,6 +226,30 @@
     .skill-bar-tag { font-size: 9px; font-weight: 700; width: 28px; flex-shrink: 0; }
     .loc-pill { display: inline-flex; align-items: center; gap: 4px; background: #FDF2F8; border: 1px solid #F0ABFC; border-radius: 20px; padding: 5px 11px; font-size: 11px; font-weight: 600; color: #701A75; margin: 3px 2px; }
     .loc-empty { color: #9CA3AF; font-size: 12px; font-style: italic; padding: 6px 0; }
+
+    /* ─── Mode switcher (Smart Scan / Quick Build) ─── */
+    .mode-switcher {
+      display: flex; background: #fff; border-bottom: 1px solid #E4E7EB;
+    }
+    .msw-btn {
+      flex: 1; padding: 10px 12px; font-size: 12px; font-weight: 600; color: #6B7280;
+      background: none; border: none; cursor: pointer; border-bottom: 2px solid transparent;
+      transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .msw-btn:hover { color: #1A1A2E; }
+    .msw-btn.active { color: #5B6CF6; border-bottom-color: #5B6CF6; background: #FAFAFE; }
+
+    /* ─── Quick Build form ─── */
+    .qb-panel { padding: 18px 20px; }
+    .qb-must-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .qb-num {
+      width: 22px; height: 22px; border-radius: 50%; background: #5B6CF6; color: #fff;
+      font-size: 11px; font-weight: 800; display: flex; align-items: center;
+      justify-content: center; flex-shrink: 0;
+    }
+    .tag.avoid    { background: #FEF2F2; color: #991B1B; }
+    .bool-box .avoid-kw { color: #FCA5A5; }
+    .check-row.avoid-row.filled .dot { background: #EF4444; border-color: #EF4444; }
   </style>
 </head>
 <body>
@@ -249,6 +273,15 @@
 <!-- ═══ SEARCH PANE ═══ -->
 <div class="tab-pane active" id="pane-search">
   <div class="left-col">
+
+    <!-- Mode switcher -->
+    <div class="mode-switcher">
+      <button class="msw-btn active" id="msw-auto" onclick="switchMode('auto')">🪄 Smart Scan</button>
+      <button class="msw-btn" id="msw-manual" onclick="switchMode('manual')">✏️ Quick Build</button>
+    </div>
+
+    <!-- ══ SMART SCAN MODE (JD Auto-fill + full form) ══ -->
+    <div id="mode-auto">
 
     <!-- JD Auto-Fill -->
     <div class="jd-banner">
@@ -324,6 +357,74 @@
         <button class="btn btn-ghost" onclick="clearAll()">Clear</button>
       </div>
     </div>
+
+    </div><!-- /mode-auto -->
+
+    <!-- ══ QUICK BUILD MODE ══ -->
+    <div id="mode-manual" style="display:none">
+      <div class="qb-panel">
+
+        <!-- Role -->
+        <div class="field">
+          <label>Role Title <span class="sub">* required</span></label>
+          <input type="text" class="text-input" id="qb-role" placeholder="e.g. Senior SRE Engineer" />
+        </div>
+
+        <!-- 3 Core Must-Haves -->
+        <div class="field">
+          <label>3 Core Requirements <span class="sub">must-have for every candidate</span></label>
+          <div class="qb-must-row">
+            <div class="qb-num">1</div>
+            <input type="text" class="text-input" id="qb-must1" placeholder="e.g. Kubernetes" />
+          </div>
+          <div class="qb-must-row">
+            <div class="qb-num">2</div>
+            <input type="text" class="text-input" id="qb-must2" placeholder="e.g. AWS" />
+          </div>
+          <div class="qb-must-row">
+            <div class="qb-num">3</div>
+            <input type="text" class="text-input" id="qb-must3" placeholder="e.g. Python" />
+          </div>
+          <div class="hint">🔴 AND terms — every candidate must have all of these</div>
+        </div>
+
+        <!-- Strong Preference -->
+        <div class="field">
+          <label>Strong Preference <span class="sub">nice-to-have, not blockers</span></label>
+          <div class="tag-wrap" onclick="focusIn('pref')">
+            <div class="tag-inner" id="tags-pref"></div>
+            <input class="tag-input-field" id="in-pref" placeholder="e.g. Terraform, Helm, Go…" onkeydown="onKey(event,'pref')" />
+          </div>
+          <div class="hint">🟡 OR terms — joined as strong-preference group</div>
+        </div>
+
+        <!-- Please Avoid -->
+        <div class="field">
+          <label>Please Avoid <span class="sub">exclusion terms</span></label>
+          <div class="tag-wrap" onclick="focusIn('avoid')">
+            <div class="tag-inner" id="tags-avoid"></div>
+            <input class="tag-input-field" id="in-avoid" placeholder="e.g. Fresher, Intern, Trainee…" onkeydown="onKey(event,'avoid')" />
+          </div>
+          <div class="hint">🚫 NOT terms — profiles with these keywords will be excluded</div>
+        </div>
+
+        <!-- Experience -->
+        <div class="field">
+          <label>Experience <span class="sub">years</span></label>
+          <div class="exp-row">
+            <input type="text" class="text-input" id="qb-exp-min" placeholder="Min" />
+            <span>to</span>
+            <input type="text" class="text-input" id="qb-exp-max" placeholder="Max" />
+            <span>years</span>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="generateQuick()">🔍 Build Search String</button>
+          <button class="btn btn-ghost" onclick="clearQuick()">Clear</button>
+        </div>
+      </div>
+    </div><!-- /mode-manual -->
 
   </div><!-- /left-col -->
 
@@ -886,8 +987,8 @@ function showStatus(type, msg) {
 // ═══════════════════════════════════════════════
 //  STATE & TAG INPUTS
 // ═══════════════════════════════════════════════
-const S = { must:[], good:[], kw:[], loc:[], co:[] };
-const COLORS = { must:'must', good:'good', kw:'keyword', loc:'loc', co:'co' };
+const S = { must:[], good:[], kw:[], loc:[], co:[], pref:[], avoid:[] };
+const COLORS = { must:'must', good:'good', kw:'keyword', loc:'loc', co:'co', pref:'good', avoid:'avoid' };
 
 function focusIn(t) { document.getElementById('in-'+t).focus(); }
 
@@ -928,7 +1029,11 @@ function buildBoolean() {
   if (S.good.length) parts.push('(' + S.good.map(s=>`"${s}"`).join(' OR ') + ')');
   if (S.kw.length)   parts.push('(' + S.kw.map(s=>`"${s}"`).join(' OR ') + ')');
   if (S.co.length)   parts.push('(' + S.co.map(s=>`"${s}"`).join(' OR ') + ')');
-  return parts.join('\n\nAND\n\n');
+  let result = parts.join('\n\nAND\n\n');
+  if (S.avoid && S.avoid.length) {
+    result += '\n\nNOT ' + S.avoid.map(s=>`"${s}"`).join(' NOT ');
+  }
+  return result;
 }
 
 function buildColoredBoolean() {
@@ -939,7 +1044,11 @@ function buildColoredBoolean() {
   if (S.good.length) parts.push('(' + S.good.map(s=>w('good-kw',`"${s}"`)).join(' '+OP('OR')+' ') + ')');
   if (S.kw.length)   parts.push('(' + S.kw.map(s=>w('kw-kw',  `"${s}"`)).join(' '+OP('OR')+' ') + ')');
   if (S.co.length)   parts.push('(' + S.co.map(s=>w('co-kw',  `"${s}"`)).join(' '+OP('OR')+' ') + ')');
-  return parts.join('\n\n'+OP('AND')+'\n\n');
+  let result = parts.join('\n\n'+OP('AND')+'\n\n');
+  if (S.avoid && S.avoid.length) {
+    result += '\n\n' + S.avoid.map(s => OP('NOT') + ' ' + w('avoid-kw', `"${s}"`)).join(' ');
+  }
+  return result;
 }
 
 function getSignal() {
@@ -956,13 +1065,21 @@ let boolMode = 'full'; // 'full' | 'broad'
 
 function buildBroadBoolean() {
   // Broad = must-have skills only — wider pool, good for initial scouting
-  return S.must.map(s => `"${s}"`).join(' AND ');
+  let result = S.must.map(s => `"${s}"`).join(' AND ');
+  if (S.avoid && S.avoid.length) {
+    result += '\n\nNOT ' + S.avoid.map(s=>`"${s}"`).join(' NOT ');
+  }
+  return result;
 }
 
 function buildBroadColoredBoolean() {
   const w  = (cls, t) => `<span class="${cls}">${esc(t)}</span>`;
   const OP = t => `<span class="op">${t}</span>`;
-  return S.must.map(s => w('must-kw', `"${s}"`)).join(' ' + OP('AND') + ' ');
+  let result = S.must.map(s => w('must-kw', `"${s}"`)).join(' ' + OP('AND') + ' ');
+  if (S.avoid && S.avoid.length) {
+    result += '\n\n' + S.avoid.map(s => OP('NOT') + ' ' + w('avoid-kw', `"${s}"`)).join(' ');
+  }
+  return result;
 }
 
 function getCurrentBool() {
@@ -1035,9 +1152,10 @@ function generate() {
     { label:'Target Companies', value: S.co.join(', ')   || '—',         done:S.co.length>0   },
   ];
   if (expMin||expMax) rows.push({ label:'Experience', value:`${expMin||'0'}–${expMax||'∞'} years`, done:true });
+  if (S.avoid && S.avoid.length) rows.push({ label:'Please Avoid', value: S.avoid.map(s=>`NOT "${s}"`).join(' '), done:true, avoidRow:true });
 
   const checkHtml = rows.map(r=>`
-    <div class="check-row ${r.done?'filled':''}">
+    <div class="check-row ${r.done?'filled':''} ${r.avoidRow?'avoid-row':''}">
       <div class="dot"></div>
       <div><strong>${r.label}:</strong> ${esc(r.value)}</div>
     </div>`).join('');
@@ -1085,6 +1203,7 @@ function generate() {
         <button class="btn-copy" onclick="copyBool()">📋 Copy String</button>
       </div>
       ${S.loc.length?`<div class="notice amber">💡 <strong>Location tip:</strong> Use LinkedIn Recruiter's <strong>Location filter</strong> for <em>${S.loc.join(', ')}</em> — don't include it in the keyword box.</div>`:''}
+      ${S.avoid && S.avoid.length?`<div class="notice blue" style="background:#FEF2F2;border-color:#FECACA;color:#991B1B;margin-top:6px">🚫 <strong>Exclusions active:</strong> ${S.avoid.map(s=>`<em>NOT "${s}"</em>`).join(', ')} — profiles mentioning these terms will be filtered out.</div>`:''}
     </div>
     <div class="card">
       <div class="card-title">How to use in LinkedIn Recruiter</div>${steps}
@@ -1489,10 +1608,60 @@ function loadHistory(id) {
 //  CLEAR / TABS / UTIL
 // ═══════════════════════════════════════════════
 function clearAll() {
-  ['must','good','kw','loc','co'].forEach(t=>{ S[t]=[]; renderTags(t); });
+  ['must','good','kw','loc','co','pref','avoid'].forEach(t=>{ S[t]=[]; renderTags(t); });
   ['f-role','f-exp-min','f-exp-max'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('jd-text').value = '';
   document.getElementById('parse-status').className = 'parse-status';
+  document.getElementById('empty-state').style.display = 'block';
+  document.getElementById('output').style.display = 'none';
+}
+
+// ═══════════════════════════════════════════════
+//  MODE SWITCHER (Smart Scan / Quick Build)
+// ═══════════════════════════════════════════════
+function switchMode(mode) {
+  const isAuto = mode === 'auto';
+  document.getElementById('mode-auto').style.display   = isAuto ? 'block' : 'none';
+  document.getElementById('mode-manual').style.display = isAuto ? 'none'  : 'block';
+  document.getElementById('msw-auto').classList.toggle('active',   isAuto);
+  document.getElementById('msw-manual').classList.toggle('active', !isAuto);
+}
+
+// ─── Quick Build: generate from the 4 simplified fields ───
+function generateQuick() {
+  const role = document.getElementById('qb-role').value.trim();
+  if (!role) { alert('Please enter a Role Title.'); return; }
+
+  const m1 = document.getElementById('qb-must1').value.trim();
+  const m2 = document.getElementById('qb-must2').value.trim();
+  const m3 = document.getElementById('qb-must3').value.trim();
+  const mustArr = [m1, m2, m3].filter(Boolean);
+  if (!mustArr.length) { alert('Please fill in at least one Core Requirement.'); return; }
+
+  // Sync into main state so generate() / logResult() / generateReport() all work
+  document.getElementById('f-role').value    = role;
+  document.getElementById('f-exp-min').value = document.getElementById('qb-exp-min').value;
+  document.getElementById('f-exp-max').value = document.getElementById('qb-exp-max').value;
+
+  S.must = mustArr;
+  S.good = [...S.pref];  // preferences become OR terms
+  S.kw   = [];
+  S.loc  = [];
+  S.co   = [];
+  // S.avoid stays exactly as set by the QB form
+
+  // Re-render the auto-mode tags so they reflect what was built
+  ['must','good','kw','loc','co'].forEach(t => renderTags(t));
+
+  generate();
+}
+
+// ─── Quick Build: clear all QB-specific fields ───
+function clearQuick() {
+  ['qb-role','qb-must1','qb-must2','qb-must3','qb-exp-min','qb-exp-max']
+    .forEach(id => document.getElementById(id).value = '');
+  S.pref  = []; renderTags('pref');
+  S.avoid = []; renderTags('avoid');
   document.getElementById('empty-state').style.display = 'block';
   document.getElementById('output').style.display = 'none';
 }
