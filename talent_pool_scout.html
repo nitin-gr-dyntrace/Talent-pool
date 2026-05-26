@@ -227,10 +227,15 @@
     .loc-pill { display: inline-flex; align-items: center; gap: 4px; background: #FDF2F8; border: 1px solid #F0ABFC; border-radius: 20px; padding: 5px 11px; font-size: 11px; font-weight: 600; color: #701A75; margin: 3px 2px; }
     .loc-empty { color: #9CA3AF; font-size: 12px; font-style: italic; padding: 6px 0; }
 
-    /* ─── Please Avoid field ─── */
-    .tag.avoid    { background: #FEF2F2; color: #991B1B; }
-    .bool-box .avoid-kw { color: #FCA5A5; }
-    .check-row.avoid-row.filled .dot { background: #EF4444; border-color: #EF4444; }
+    /* ── 3 new manual fields ── */
+    .must3-row  { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+    .must3-num  { width:22px; height:22px; border-radius:50%; background:#5B6CF6; color:#fff; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .tag.avoid  { background:#FEF2F2; color:#991B1B; }
+    .bool-box .avoid-kw { color:#FCA5A5; }
+    .req-star   { color:#EF4444; margin-left:2px; }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-5px)} 40%,80%{transform:translateX(5px)} }
+    .field-err .tag-wrap,
+    .field-err .must3-row input { border-color:#EF4444 !important; animation:shake 0.35s ease; }
   </style>
 </head>
 <body>
@@ -292,14 +297,31 @@
         </div>
         <div class="hint">🟡 Joined with OR — nice to have, not mandatory</div>
       </div>
-      <div class="field">
-        <label>Please Avoid <span class="sub">exclusion terms</span></label>
+      <!-- ── 3 MANUAL FIELDS (mandatory, never auto-filled) ── -->
+      <div class="field" id="fld-must3">
+        <label>3 Must-Haves <span class="req-star">*</span> <span class="sub">manually enter — every candidate MUST have these</span></label>
+        <div class="must3-row"><div class="must3-num">1</div><input type="text" class="text-input" id="f-must1" placeholder="e.g. Python" /></div>
+        <div class="must3-row"><div class="must3-num">2</div><input type="text" class="text-input" id="f-must2" placeholder="e.g. AWS" /></div>
+        <div class="must3-row"><div class="must3-num">3</div><input type="text" class="text-input" id="f-must3" placeholder="e.g. Kubernetes" /></div>
+        <div class="hint">🔴 AND terms — added on top of any skills above</div>
+      </div>
+      <div class="field" id="fld-pref">
+        <label>Strong Preference <span class="req-star">*</span> <span class="sub">manually enter — at least one required</span></label>
+        <div class="tag-wrap" onclick="focusIn('pref')">
+          <div class="tag-inner" id="tags-pref"></div>
+          <input class="tag-input-field" id="in-pref" placeholder="e.g. Terraform, Docker, Go…" onkeydown="onKey(event,'pref')" />
+        </div>
+        <div class="hint">🟡 OR terms — strongly preferred but not a dealbreaker</div>
+      </div>
+      <div class="field" id="fld-avoid">
+        <label>Please Avoid <span class="req-star">*</span> <span class="sub">manually enter — at least one required</span></label>
         <div class="tag-wrap" onclick="focusIn('avoid')">
           <div class="tag-inner" id="tags-avoid"></div>
           <input class="tag-input-field" id="in-avoid" placeholder="e.g. Fresher, Intern, Junior…" onkeydown="onKey(event,'avoid')" />
         </div>
-        <div class="hint">🚫 NOT terms — profiles containing these will be excluded from results</div>
+        <div class="hint">🚫 NOT terms — profiles with these keywords excluded</div>
       </div>
+      <!-- ── end manual fields ── -->
       <div class="field">
         <label>JD Keywords <span class="sub">Enter or comma to add</span></label>
         <div class="tag-wrap" onclick="focusIn('kw')">
@@ -605,12 +627,17 @@ function bulletToSkill(raw) {
   // Remove trailing punctuation
   s = s.replace(/[.:!?()\[\]]+$/, '').trim();
 
-  // Skip education/qualification phrases that aren't skills
-  if (/^technical\s+(?:studies|background|education|degree)\s+(?:related|in|from|or)/i.test(s)) return null;
+  // Skip education/qualification phrases
+  if (/^(?:technical\s+(?:studies|background|education|degree)|bachelor|master|degree|diploma|certification|qualification|graduate|phd|mba|b\.?tech|m\.?tech|b\.?sc|m\.?sc)/i.test(s)) return null;
+  // Skip experience-range phrases like "3–5 Years Of", "2-4 years experience"
+  if (/^\d+\s*[-–—]\s*\d+\s*years?\b/i.test(s)) return null;
+  // Strip trailing & or + (incomplete phrases like "Invoice Reconciliation &")
+  s = s.replace(/\s*[&+]\s*$/, '').trim();
+  if (s.length < 3) return null;
 
   // If line starts with an action verb, rescue the skill that follows
   // e.g. "Build microservices on Kubernetes" → "Microservices"
-  const SKIP_VERB = /^(?:manage|work(?:ing)?|ensure|support|drive|lead|build|develop|create|maintain|help|assist|provide|conduct|review|prepare|handle|coordinate|communicate|collaborate|partner|own|define|execute|analyse|analyze|monitor|report|improve|design|implement|establish|identify|deliver|oversee|facilitate|engage|demonstrate|participate|contribute|achieve|write|use|utilize|troubleshoot|debug|deploy|configure|set\s+up|integrate|automate|optimise|optimize|scale|migrate|architect|focus|take|bring|strong|good|excellent|solid|leverage|foster)\b/i;
+  const SKIP_VERB = /^(?:manage|work(?:ing)?|ensure|support|drive|lead|build|develop|create|maintain|help|assist|provide|conduct|review|prepare|handle|coordinate|communicate|collaborate|partner|own|define|execute|analyse|analyze|monitor|report|improve|design|implement|establish|identify|deliver|oversee|facilitate|engage|demonstrate|participate|contribute|achieve|write|use|utilize|troubleshoot|debug|deploy|configure|set\s+up|integrate|automate|optimise|optimize|scale|migrate|architect|focus|take|bring|strong|good|excellent|solid|leverage|foster|liaise|track(?:ing)?|investigate|serve|process|submit|raise|reconcile|perform|act|resolve|handle|respond|update|verify|ensure|maintain|follow|check|test|validate|prepare|plan|support|assist|coordinate|organise|organize|schedule|arrange|meet|attend|record|document|provide|offer|share|present|recommend|advise|evaluate|assess|review|approve|escalate|manage|close|open|send|receive|request|obtain|collect|gather|compile|calculate|compute|generate|produce|create|post|enter|input|upload|download|extract|format|sort|file|archive|store|retrieve|locate|search|find|match|compare|check|audit|reconcile)\b/i;
   if (SKIP_VERB.test(s)) {
     const afterVerb = s.replace(/^\S+\s+/, '').trim();
     const cleaned = afterVerb.replace(/^(?:and|or|with|in|on|for|to|the|a|an)\s+/i, '').trim();
@@ -627,7 +654,7 @@ function bulletToSkill(raw) {
   if (s.length < 3) return null;
 
   // Filter out words that are too generic to be useful in a boolean search
-  const TOO_GENERIC = /^(?:verbal|written|interpersonal|analytical|communication|english|soft\s+skills?|problem[\s-]solving|attention\s+to\s+detail|time\s+management|teamwork|team\s+player|self[\s-]starter|proactive|motivated|passionate|driven)$/i;
+  const TOO_GENERIC = /^(?:verbal|written|interpersonal|analytical|communication|english|soft\s+skills?|problem[\s-]solving|attention\s+to\s+detail|time\s+management|teamwork|team\s+player|self[\s-]starter|proactive|motivated|passionate|driven|data|documentation|reporting|process|information|knowledge|systems?|tools?|tasks?|duties|responsibilities|role|position|team|company|candidate|applicant)$/i;
   if (TOO_GENERIC.test(s)) return null;
 
   // Title-case if all lowercase
@@ -763,15 +790,6 @@ function parseJD() {
   }
 
   // ── 5. Merge: DB results take priority, bullets fill the gaps ──
-  function dedup(arr) {
-    const seen = new Set(), out = [];
-    for (const s of arr) {
-      const key = s.toLowerCase();
-      if (!seen.has(key)) { seen.add(key); out.push(s); }
-    }
-    return out;
-  }
-
   // Merge DB + bullet results
   let mustArr = dedup([...dbMust, ...bulletMust.filter(b => ![...dbMust].some(d => d.toLowerCase() === b.toLowerCase()))]);
   let goodArr = dedup([...dbGood, ...bulletGood.filter(b => ![...dbGood].some(d => d.toLowerCase() === b.toLowerCase()))]);
@@ -899,8 +917,8 @@ function showStatus(type, msg) {
 // ═══════════════════════════════════════════════
 //  STATE & TAG INPUTS
 // ═══════════════════════════════════════════════
-const S = { must:[], good:[], kw:[], loc:[], co:[], avoid:[] };
-const COLORS = { must:'must', good:'good', kw:'keyword', loc:'loc', co:'co', avoid:'avoid' };
+const S = { must:[], good:[], kw:[], loc:[], co:[], pref:[], avoid:[] };
+const COLORS = { must:'must', good:'good', kw:'keyword', loc:'loc', co:'co', pref:'good', avoid:'avoid' };
 
 function focusIn(t) { document.getElementById('in-'+t).focus(); }
 
@@ -936,30 +954,44 @@ function renderTags(t) {
 //  BOOLEAN BUILDER
 // ═══════════════════════════════════════════════
 function buildBoolean() {
+  // Merge manual must-haves with scanner must-haves (dedup)
+  const allMust = dedup([...S.must, ...getManualMust()]);
+  // Merge strong preference with good-to-have (dedup)
+  const allGood = dedup([...S.good, ...S.pref]);
   const parts = [];
-  if (S.must.length) parts.push(S.must.map(s=>`"${s}"`).join(' AND '));
-  if (S.good.length) parts.push('(' + S.good.map(s=>`"${s}"`).join(' OR ') + ')');
-  if (S.kw.length)   parts.push('(' + S.kw.map(s=>`"${s}"`).join(' OR ') + ')');
-  if (S.co.length)   parts.push('(' + S.co.map(s=>`"${s}"`).join(' OR ') + ')');
+  if (allMust.length) parts.push(allMust.map(s=>`"${s}"`).join(' AND '));
+  if (allGood.length) parts.push('(' + allGood.map(s=>`"${s}"`).join(' OR ') + ')');
+  if (S.kw.length)    parts.push('(' + S.kw.map(s=>`"${s}"`).join(' OR ') + ')');
+  if (S.co.length)    parts.push('(' + S.co.map(s=>`"${s}"`).join(' OR ') + ')');
   let result = parts.join('\n\nAND\n\n');
-  if (S.avoid && S.avoid.length) {
-    result += '\n\nNOT ' + S.avoid.map(s=>`"${s}"`).join(' NOT ');
-  }
+  if (S.avoid.length) result += '\n\nNOT ' + S.avoid.map(s=>`"${s}"`).join(' NOT ');
   return result;
+}
+
+function getManualMust() {
+  return ['f-must1','f-must2','f-must3']
+    .map(id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; })
+    .filter(Boolean);
+}
+
+function dedup(arr) {
+  const seen = new Set(), out = [];
+  for (const s of arr) { const k = s.toLowerCase(); if (!seen.has(k)) { seen.add(k); out.push(s); } }
+  return out;
 }
 
 function buildColoredBoolean() {
   const w  = (cls, t) => `<span class="${cls}">${esc(t)}</span>`;
   const OP = t => `<span class="op">${t}</span>`;
+  const allMust = dedup([...S.must, ...getManualMust()]);
+  const allGood = dedup([...S.good, ...S.pref]);
   const parts = [];
-  if (S.must.length) parts.push(S.must.map(s=>w('must-kw',`"${s}"`)).join(' '+OP('AND')+' '));
-  if (S.good.length) parts.push('(' + S.good.map(s=>w('good-kw',`"${s}"`)).join(' '+OP('OR')+' ') + ')');
-  if (S.kw.length)   parts.push('(' + S.kw.map(s=>w('kw-kw',  `"${s}"`)).join(' '+OP('OR')+' ') + ')');
-  if (S.co.length)   parts.push('(' + S.co.map(s=>w('co-kw',  `"${s}"`)).join(' '+OP('OR')+' ') + ')');
+  if (allMust.length) parts.push(allMust.map(s=>w('must-kw',`"${s}"`)).join(' '+OP('AND')+' '));
+  if (allGood.length) parts.push('(' + allGood.map(s=>w('good-kw',`"${s}"`)).join(' '+OP('OR')+' ') + ')');
+  if (S.kw.length)    parts.push('(' + S.kw.map(s=>w('kw-kw',  `"${s}"`)).join(' '+OP('OR')+' ') + ')');
+  if (S.co.length)    parts.push('(' + S.co.map(s=>w('co-kw',  `"${s}"`)).join(' '+OP('OR')+' ') + ')');
   let result = parts.join('\n\n'+OP('AND')+'\n\n');
-  if (S.avoid && S.avoid.length) {
-    result += '\n\n' + S.avoid.map(s => OP('NOT') + ' ' + w('avoid-kw', `"${s}"`)).join(' ');
-  }
+  if (S.avoid.length) result += '\n\n' + S.avoid.map(s=>OP('NOT')+' '+w('avoid-kw',`"${s}"`)).join(' ');
   return result;
 }
 
@@ -976,21 +1008,18 @@ function getSignal() {
 let boolMode = 'full'; // 'full' | 'broad'
 
 function buildBroadBoolean() {
-  // Broad = must-have skills only — wider pool, good for initial scouting
-  let result = S.must.map(s => `"${s}"`).join(' AND ');
-  if (S.avoid && S.avoid.length) {
-    result += '\n\nNOT ' + S.avoid.map(s=>`"${s}"`).join(' NOT ');
-  }
+  const allMust = dedup([...S.must, ...getManualMust()]);
+  let result = allMust.map(s=>`"${s}"`).join(' AND ');
+  if (S.avoid.length) result += '\n\nNOT ' + S.avoid.map(s=>`"${s}"`).join(' NOT ');
   return result;
 }
 
 function buildBroadColoredBoolean() {
   const w  = (cls, t) => `<span class="${cls}">${esc(t)}</span>`;
   const OP = t => `<span class="op">${t}</span>`;
-  let result = S.must.map(s => w('must-kw', `"${s}"`)).join(' ' + OP('AND') + ' ');
-  if (S.avoid && S.avoid.length) {
-    result += '\n\n' + S.avoid.map(s => OP('NOT') + ' ' + w('avoid-kw', `"${s}"`)).join(' ');
-  }
+  const allMust = dedup([...S.must, ...getManualMust()]);
+  let result = allMust.map(s=>w('must-kw',`"${s}"`)).join(' '+OP('AND')+' ');
+  if (S.avoid.length) result += '\n\n' + S.avoid.map(s=>OP('NOT')+' '+w('avoid-kw',`"${s}"`)).join(' ');
   return result;
 }
 
@@ -1044,10 +1073,37 @@ function refreshCharCount() {
 // ═══════════════════════════════════════════════
 //  GENERATE
 // ═══════════════════════════════════════════════
+function markErr(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.remove('field-err');
+  void el.offsetWidth; // restart animation
+  el.classList.add('field-err');
+  setTimeout(() => el.classList.remove('field-err'), 800);
+}
+
 function generate() {
   const role = document.getElementById('f-role').value.trim();
-  if (!role)         { alert('Please enter a Role Title.'); return; }
-  if (!S.must.length){ alert('Please add at least one Must-Have skill.'); return; }
+  if (!role) { alert('Please enter a Role Title.'); return; }
+
+  // ── Mandatory: 3 Must-Haves (at least 1) ──
+  if (!getManualMust().length) {
+    markErr('fld-must3');
+    document.getElementById('f-must1').focus();
+    return;
+  }
+  // ── Mandatory: Strong Preference (at least 1 tag) ──
+  if (!S.pref.length) {
+    markErr('fld-pref');
+    document.getElementById('in-pref').focus();
+    return;
+  }
+  // ── Mandatory: Please Avoid (at least 1 tag) ──
+  if (!S.avoid.length) {
+    markErr('fld-avoid');
+    document.getElementById('in-avoid').focus();
+    return;
+  }
 
   const expMin = document.getElementById('f-exp-min').value.trim();
   const expMax = document.getElementById('f-exp-max').value.trim();
@@ -1064,10 +1120,9 @@ function generate() {
     { label:'Target Companies', value: S.co.join(', ')   || '—',         done:S.co.length>0   },
   ];
   if (expMin||expMax) rows.push({ label:'Experience', value:`${expMin||'0'}–${expMax||'∞'} years`, done:true });
-  if (S.avoid && S.avoid.length) rows.push({ label:'Please Avoid', value: S.avoid.map(s=>`NOT "${s}"`).join(' '), done:true, avoidRow:true });
 
   const checkHtml = rows.map(r=>`
-    <div class="check-row ${r.done?'filled':''} ${r.avoidRow?'avoid-row':''}">
+    <div class="check-row ${r.done?'filled':''}">
       <div class="dot"></div>
       <div><strong>${r.label}:</strong> ${esc(r.value)}</div>
     </div>`).join('');
@@ -1115,7 +1170,6 @@ function generate() {
         <button class="btn-copy" onclick="copyBool()">📋 Copy String</button>
       </div>
       ${S.loc.length?`<div class="notice amber">💡 <strong>Location tip:</strong> Use LinkedIn Recruiter's <strong>Location filter</strong> for <em>${S.loc.join(', ')}</em> — don't include it in the keyword box.</div>`:''}
-      ${S.avoid && S.avoid.length?`<div class="notice blue" style="background:#FEF2F2;border-color:#FECACA;color:#991B1B;margin-top:6px">🚫 <strong>Exclusions active:</strong> ${S.avoid.map(s=>`<em>NOT "${s}"</em>`).join(', ')} — profiles mentioning these terms will be filtered out.</div>`:''}
     </div>
     <div class="card">
       <div class="card-title">How to use in LinkedIn Recruiter</div>${steps}
@@ -1520,8 +1574,9 @@ function loadHistory(id) {
 //  CLEAR / TABS / UTIL
 // ═══════════════════════════════════════════════
 function clearAll() {
-  ['must','good','kw','loc','co','avoid'].forEach(t=>{ S[t]=[]; renderTags(t); });
-  ['f-role','f-exp-min','f-exp-max'].forEach(id=>document.getElementById(id).value='');
+  ['must','good','kw','loc','co','pref','avoid'].forEach(t=>{ S[t]=[]; renderTags(t); });
+  ['f-role','f-exp-min','f-exp-max','f-must1','f-must2','f-must3']
+    .forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('jd-text').value = '';
   document.getElementById('parse-status').className = 'parse-status';
   document.getElementById('empty-state').style.display = 'block';
