@@ -1387,7 +1387,7 @@ async function geminiCall(prompt) {
 
   } else {
     // ── Google Gemini ──
-    const model = 'gemini-1.5-flash-8b';   // free tier: 1000 req/day
+    const model = 'gemini-1.5-flash';   // stable free-tier model
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
       {
