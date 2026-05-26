@@ -444,18 +444,38 @@
     <div class="settings-section">
       <div class="settings-label">Choose Your AI Provider</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+        <div class="provider-card" id="pcard-groq" onclick="selectProvider('groq')" style="border-color:#10B981;background:#F0FDF4">
+          <div class="provider-name">⚡ Groq <span style="font-size:10px;background:#10B981;color:#fff;padding:1px 6px;border-radius:8px;font-weight:700;margin-left:4px">RECOMMENDED</span></div>
+          <div class="provider-desc">100% free, no credit card. Fastest AI available. Sign up at console.groq.com in 30 seconds.</div>
+        </div>
         <div class="provider-card" id="pcard-gemini" onclick="selectProvider('gemini')">
           <div class="provider-name">🔵 Google Gemini</div>
-          <div class="provider-desc">Free API key from Google AI Studio. 1,000 calls/day free.</div>
+          <div class="provider-desc">Free API key from Google AI Studio (aistudio.google.com). 1,500 calls/day.</div>
         </div>
         <div class="provider-card" id="pcard-github" onclick="selectProvider('github')">
           <div class="provider-name">🐙 GitHub Copilot</div>
-          <div class="provider-desc">Use your existing Enterprise licence. GitHub PAT token — no extra cost.</div>
+          <div class="provider-desc">Use your existing Enterprise licence. GitHub PAT with models:read scope.</div>
         </div>
       </div>
     </div>
 
     <hr class="settings-divider" />
+
+    <!-- Groq section -->
+    <div id="section-groq" class="settings-section" style="display:none">
+      <div class="settings-label">Groq API Key</div>
+      <div class="settings-desc">Free — no credit card needed. Your key is saved only in <strong>your browser</strong>.</div>
+      <div class="api-input-row">
+        <input class="api-input" type="password" id="api-key-input-groq" placeholder="Paste your Groq key  (gsk_…)" autocomplete="off" />
+        <button class="btn-save-key" onclick="saveApiKeyGroq()">Save</button>
+      </div>
+      <div class="key-status" id="key-status-groq" style="display:none"></div>
+      <button class="btn-clear-key" id="btn-clear-key-groq" onclick="clearApiKeyGroq()">Remove saved key</button>
+      <div class="settings-label" style="margin-top:16px">How to get your free Groq key (2 minutes)</div>
+      <div class="how-step"><span class="how-num">1</span><span class="how-text">Go to <a href="https://console.groq.com" target="_blank">console.groq.com</a> → click <strong>"Sign up"</strong> → sign in with your Google account</span></div>
+      <div class="how-step"><span class="how-num">2</span><span class="how-text">Click <strong>"API Keys"</strong> in the left menu → click <strong>"Create API Key"</strong></span></div>
+      <div class="how-step"><span class="how-num">3</span><span class="how-text">Copy the key (starts with <code>gsk_</code>) → paste above → click <strong>Save</strong></span></div>
+    </div>
 
     <!-- Gemini section -->
     <div id="section-gemini" class="settings-section">
@@ -1235,19 +1255,37 @@ function showStatus(type, msg) {
 // ═══════════════════════════════════════════════
 function getApiKey() {
   const provider = localStorage.getItem('tps_ai_provider') || 'gemini';
-  return provider === 'github'
-    ? localStorage.getItem('tps_github_key') || ''
-    : localStorage.getItem('tps_gemini_key') || '';
+  if (provider === 'github') return localStorage.getItem('tps_github_key') || '';
+  if (provider === 'groq')   return localStorage.getItem('tps_groq_key')   || '';
+  return localStorage.getItem('tps_gemini_key') || '';
 }
 
 function selectProvider(p) {
   localStorage.setItem('tps_ai_provider', p);
-  document.getElementById('pcard-gemini').classList.toggle('active', p==='gemini');
-  document.getElementById('pcard-github').classList.toggle('active', p==='github');
-  document.getElementById('section-gemini').style.display = p==='gemini' ? 'block' : 'none';
-  document.getElementById('section-github').style.display = p==='github' ? 'block' : 'none';
+  ['gemini','github','groq'].forEach(id => {
+    const card = document.getElementById('pcard-'+id);
+    const sec  = document.getElementById('section-'+id);
+    if (card) card.classList.toggle('active', id===p);
+    if (sec)  sec.style.display = id===p ? 'block' : 'none';
+  });
   renderKeyStatus();
   updateAiStatus();
+}
+
+function saveApiKeyGroq() {
+  const key = document.getElementById('api-key-input-groq').value.trim();
+  if (!key) { alert('Please paste your Groq API key first.'); return; }
+  if (!key.startsWith('gsk_')) { alert('Groq keys start with "gsk_". Check you copied the full key from console.groq.com.'); return; }
+  localStorage.setItem('tps_groq_key', key);
+  localStorage.setItem('tps_ai_provider', 'groq');
+  document.getElementById('api-key-input-groq').value = '';
+  updateAiStatus(); renderKeyStatus();
+}
+
+function clearApiKeyGroq() {
+  if (!confirm('Remove your saved Groq key?')) return;
+  localStorage.removeItem('tps_groq_key');
+  updateAiStatus(); renderKeyStatus();
 }
 
 function saveApiKey() {
@@ -1319,30 +1357,48 @@ function renderKeyStatus() {
       cbGH.style.display = 'none';
     }
   }
-  // Highlight active provider card
+  // Groq status
+  const groqKey = localStorage.getItem('tps_groq_key') || '';
+  const elGR = document.getElementById('key-status-groq');
+  const cbGR = document.getElementById('btn-clear-key-groq');
+  if (elGR) {
+    elGR.style.display = 'block';
+    if (groqKey) {
+      elGR.className = 'key-status set';
+      elGR.textContent = '✅ Groq key saved — ' + groqKey.slice(0,8) + '••••' + groqKey.slice(-4);
+      if (cbGR) cbGR.style.display = 'inline';
+    } else {
+      elGR.className = 'key-status unset';
+      elGR.textContent = '⚠️ No Groq key saved yet.';
+      if (cbGR) cbGR.style.display = 'none';
+    }
+  }
+  // Highlight active provider
   const p = localStorage.getItem('tps_ai_provider') || 'gemini';
-  const pcG = document.getElementById('pcard-gemini');
-  const pcGH = document.getElementById('pcard-github');
-  if (pcG)  pcG.classList.toggle('active', p==='gemini');
-  if (pcGH) pcGH.classList.toggle('active', p==='github');
-  const sgem = document.getElementById('section-gemini');
-  const sgh  = document.getElementById('section-github');
-  if (sgem) sgem.style.display = p==='gemini' ? 'block' : 'none';
-  if (sgh)  sgh.style.display  = p==='github'  ? 'block' : 'none';
+  ['gemini','github','groq'].forEach(id => {
+    const card = document.getElementById('pcard-'+id);
+    const sec  = document.getElementById('section-'+id);
+    if (card) card.classList.toggle('active', id===p);
+    if (sec)  sec.style.display = id===p ? 'block' : 'none';
+  });
 }
 
 function updateAiStatus() {
   const provider = localStorage.getItem('tps_ai_provider') || 'gemini';
-  const gemKey = localStorage.getItem('tps_gemini_key') || '';
-  const ghKey  = localStorage.getItem('tps_github_key')  || '';
-  const hasKey  = provider==='github' ? !!ghKey : !!gemKey;
-  const providerLabel = provider==='github' ? 'Copilot' : 'Gemini';
+  const keys = {
+    gemini: localStorage.getItem('tps_gemini_key') || '',
+    github: localStorage.getItem('tps_github_key') || '',
+    groq:   localStorage.getItem('tps_groq_key')   || '',
+  };
+  const hasKey = !!keys[provider];
+  const labels = { gemini:'Gemini', github:'Copilot', groq:'Groq' };
+  const hints  = { gemini:'Gemini Flash', github:'GitHub Copilot', groq:'Groq (Llama 3.1)' };
   const dot   = document.getElementById('ai-dot');
   const label = document.getElementById('ai-btn-label');
   if (dot)   dot.className = hasKey ? 'ai-dot on' : 'ai-dot';
-  if (label) label.textContent = hasKey ? `🟢 ${providerLabel} Connected` : '⚙️ Connect AI';
+  if (label) label.textContent = hasKey ? `🟢 ${labels[provider]} Connected` : '⚙️ Connect AI';
   const hint = document.getElementById('parse-hint');
-  if (hint)  hint.textContent = hasKey ? `✨ AI-powered · ${provider==='github' ? 'GitHub Copilot (GPT-4o-mini)' : 'Gemini Flash'}` : 'Works offline · no API needed';
+  if (hint)  hint.textContent = hasKey ? `✨ AI-powered · ${hints[provider]}` : 'Works offline · no API needed';
 }
 
 function toggleSettings() {
@@ -1378,9 +1434,29 @@ async function geminiCall(prompt) {
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       const msg = err?.error?.message || `GitHub Models error ${res.status}`;
-      if (res.status === 401) throw new Error('GitHub token rejected (401). Make sure: (1) you visited github.com/marketplace/models and accepted access, (2) your PAT has the "models:read" scope selected when you created it.');
-      if (res.status === 403) throw new Error('Token does not have GitHub Models access (403). Go to github.com/marketplace/models to enrol, then regenerate your PAT with the "models:read" scope.');
+      if (res.status === 401) throw new Error('GitHub token rejected. Make sure you visited github.com/marketplace/models and your PAT has the "models:read" scope.');
+      if (res.status === 403) throw new Error('Token lacks GitHub Models access. Go to github.com/marketplace/models to enrol first.');
       throw new Error(msg);
+    }
+    const data = await res.json();
+    return data.choices?.[0]?.message?.content || '';
+
+  } else if (provider === 'groq') {
+    // ── Groq (free, fast — recommended) ──
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      body: JSON.stringify({
+        model: 'llama-3.1-8b-instant',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 2500, temperature: 0.3
+      })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      if (res.status === 401) throw new Error('Invalid Groq API key. Paste your key from console.groq.com → API Keys.');
+      if (res.status === 429) throw new Error('Groq rate limit hit. Wait a few seconds and try again.');
+      throw new Error(err?.error?.message || `Groq error ${res.status}`);
     }
     const data = await res.json();
     return data.choices?.[0]?.message?.content || '';
