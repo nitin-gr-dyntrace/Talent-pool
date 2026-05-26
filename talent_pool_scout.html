@@ -1253,7 +1253,7 @@ function updateAiStatus() {
   if (dot)   dot.className = hasKey ? 'ai-dot on' : 'ai-dot';
   if (label) label.textContent = hasKey ? '🟢 Gemini Connected' : '⚙️ Connect Gemini';
   const hint = document.getElementById('parse-hint');
-  if (hint)  hint.textContent = hasKey ? '✨ AI-powered · Gemini 1.5 Flash' : 'Works offline · no API needed';
+  if (hint)  hint.textContent = hasKey ? '✨ AI-powered · Gemini 2.0 Flash' : 'Works offline · no API needed';
 }
 
 function toggleSettings() {
@@ -1274,7 +1274,7 @@ async function geminiCall(prompt) {
   const key = getApiKey();
   if (!key) throw new Error('No API key set');
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
