@@ -306,6 +306,96 @@
       border-top-color:#5B6CF6; border-radius:50%; animation:spin 0.7s linear infinite;
       vertical-align:middle; margin-right:5px; flex-shrink:0;
     }
+    /* ── Talent Intelligence Pane ── */
+    .intel-pane { flex:1; overflow-y:auto; padding:24px 28px; background:#F8F9FB; }
+    .intel-header {
+      background:#fff; border:1px solid #E4E7EB; border-radius:12px;
+      padding:20px 24px; display:flex; align-items:center; justify-content:space-between;
+      gap:16px; margin-bottom:20px;
+    }
+    .intel-header-title { font-size:15px; font-weight:800; margin-bottom:3px; }
+    .intel-header-sub { font-size:12px; color:#6B7280; max-width:460px; line-height:1.5; }
+    .btn-intel-gen {
+      display:flex; align-items:center; gap:8px; padding:11px 22px;
+      background:linear-gradient(135deg,#5B6CF6,#8B5CF6); color:#fff;
+      border:none; border-radius:9px; font-size:13px; font-weight:700;
+      cursor:pointer; white-space:nowrap; flex-shrink:0; transition:opacity 0.15s;
+    }
+    .btn-intel-gen:hover { opacity:0.88; }
+    .btn-intel-gen:disabled { opacity:0.55; cursor:not-allowed; }
+    .intel-notice {
+      border-radius:9px; padding:12px 16px; font-size:13px;
+      margin-bottom:16px; line-height:1.6;
+    }
+    .intel-notice.warn { background:#FFFBEB; border:1px solid #FDE68A; color:#92400E; }
+    .intel-notice.info { background:#EEF0FE; border:1px solid #C7CDFC; color:#3730A3; }
+    .intel-status {
+      background:#fff; border:1px solid #E4E7EB; border-radius:9px;
+      padding:20px 24px; text-align:center; font-size:13px; color:#6B7280;
+      margin-bottom:16px;
+    }
+    .intel-context-bar {
+      display:flex; gap:20px; flex-wrap:wrap; background:#fff;
+      border:1px solid #E4E7EB; border-radius:9px; padding:14px 20px;
+      margin-bottom:16px;
+    }
+    .icb-item .icb-label { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:#9CA3AF; margin-bottom:3px; }
+    .icb-item .icb-val { font-size:13px; font-weight:700; color:#1A1A2E; }
+    .intel-market-ctx {
+      background:#EEF0FE; border:1px solid #C7CDFC; border-radius:9px;
+      padding:13px 18px; font-size:12px; color:#1A1A2E; line-height:1.7;
+      margin-bottom:16px;
+    }
+    .intel-market-ctx strong { color:#4046C5; }
+    .intel-table-wrap { overflow-x:auto; margin-bottom:16px; }
+    .intel-table {
+      width:100%; border-collapse:collapse; background:#fff;
+      border:1px solid #E4E7EB; border-radius:10px; overflow:hidden;
+      font-size:12px;
+    }
+    .intel-table thead tr { background:#F3F4F6; }
+    .intel-table th {
+      padding:10px 14px; text-align:left; font-size:10px; font-weight:700;
+      text-transform:uppercase; letter-spacing:.06em; color:#6B7280;
+      border-bottom:1px solid #E4E7EB; white-space:nowrap;
+    }
+    .intel-table td {
+      padding:11px 14px; border-bottom:1px solid #F3F4F6;
+      vertical-align:top; line-height:1.55; color:#1A1A2E;
+    }
+    .intel-table tbody tr:last-child td { border-bottom:none; }
+    .intel-table tbody tr:hover td { background:#FAFAFE; }
+    .intel-table td[contenteditable="true"] {
+      outline:none; transition:background 0.12s;
+    }
+    .intel-table td[contenteditable="true"]:hover { background:#F5F6FF; cursor:text; }
+    .intel-table td[contenteditable="true"]:focus { background:#EEF0FE; box-shadow:inset 0 0 0 1.5px #5B6CF6; border-radius:3px; }
+    .td-cat { font-weight:700; color:#1A1A2E; width:140px; }
+    .td-co  { color:#374151; width:200px; }
+    .td-num { text-align:center; font-weight:700; font-size:14px; width:90px; }
+    .td-num.total { color:#3730A3; }
+    .td-num.qual  { color:#065F46; }
+    .td-disq { color:#6B7280; font-size:11px; }
+    .edit-hint { font-size:9px; color:#9CA3AF; font-weight:400; margin-left:4px; }
+    .intel-footer-row {
+      display:flex; align-items:center; justify-content:space-between;
+      gap:16px; margin-bottom:10px; flex-wrap:wrap;
+    }
+    .intel-verdict {
+      display:flex; align-items:center; gap:10px; padding:12px 18px;
+      border-radius:9px; font-size:13px; font-weight:700; flex:1; min-width:0;
+    }
+    .intel-verdict.go     { background:#ECFDF5; color:#065F46; border:1px solid #A7F3D0; }
+    .intel-verdict.caution{ background:#FFFBEB; color:#92400E; border:1px solid #FDE68A; }
+    .intel-verdict.rethink{ background:#FEF2F2; color:#991B1B; border:1px solid #FECACA; }
+    .btn-intel-export {
+      padding:10px 20px; background:#1A1A2E; color:#fff; border:none;
+      border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;
+      white-space:nowrap; flex-shrink:0; transition:opacity 0.15s;
+    }
+    .btn-intel-export:hover { opacity:0.82; }
+    .intel-disclaimer { font-size:10px; color:#9CA3AF; line-height:1.6; }
+
     /* ── Refine button ── */
     .btn-refine {
       display:inline-flex; align-items:center; gap:6px; padding:7px 14px;
@@ -391,6 +481,7 @@
 
 <div class="tabs">
   <div class="tab active" onclick="switchTab('search')">🔍 New Search</div>
+  <div class="tab" onclick="switchTab('intel')">🧠 Talent Intelligence</div>
   <div class="tab" onclick="switchTab('history')">
     📋 Search History
     <span class="badge" id="hist-badge" style="display:none">0</span>
@@ -509,6 +600,55 @@
       <p><strong>Paste a JD above to auto-fill the form</strong><br>or fill it in manually, then click<br><em>Generate Search String</em></p>
     </div>
     <div id="output" style="display:none"></div>
+  </div>
+</div>
+
+<!-- ═══ TALENT INTELLIGENCE PANE ═══ -->
+<div class="tab-pane" id="pane-intel">
+  <div class="intel-pane">
+
+    <div class="intel-header">
+      <div>
+        <div class="intel-header-title">🧠 Talent Intelligence Report</div>
+        <div class="intel-header-sub">AI generates the full hiring manager table — target company categories, named companies, estimated pool sizes, and why candidates won't qualify. Takes ~10 seconds.</div>
+      </div>
+      <button class="btn-intel-gen" id="btn-intel-gen" onclick="generateIntelReport()">
+        🤖 Generate AI Market Report
+      </button>
+    </div>
+
+    <div id="intel-no-key" class="intel-notice warn" style="display:none">
+      ⚠️ Gemini is not connected. Click <strong>⚙️ Connect Gemini</strong> in the top-right corner, add your free API key, and come back here.
+    </div>
+    <div id="intel-no-role" class="intel-notice warn" style="display:none">
+      ⚠️ Fill in the role details first — go to <strong>🔍 New Search</strong>, paste the JD and click Scan, then come back here.
+    </div>
+    <div id="intel-status" class="intel-status" style="display:none"></div>
+
+    <div id="intel-output" style="display:none">
+      <div id="intel-context-bar" class="intel-context-bar"></div>
+      <div id="intel-market-ctx" class="intel-market-ctx" style="display:none"></div>
+      <div class="intel-table-wrap">
+        <table class="intel-table" id="intel-table">
+          <thead>
+            <tr>
+              <th>Target Category</th>
+              <th>Companies <span class="edit-hint">(click any cell to edit)</span></th>
+              <th style="text-align:center">Est. Total Pool *</th>
+              <th style="text-align:center">Est. Qualified Pool *</th>
+              <th>Primary Disqualification Reasons</th>
+            </tr>
+          </thead>
+          <tbody id="intel-tbody"></tbody>
+        </table>
+      </div>
+      <div class="intel-footer-row">
+        <div id="intel-verdict" class="intel-verdict"></div>
+        <button class="btn-intel-export" onclick="exportIntelPDF()">📄 Export to PDF</button>
+      </div>
+      <div class="intel-disclaimer">* Pool numbers are AI estimates based on market knowledge — directional only. Verify exact counts on LinkedIn Recruiter before sharing with stakeholders.</div>
+    </div>
+
   </div>
 </div>
 
@@ -1264,6 +1404,200 @@ Keep your response practical and concise — these are non-technical HR users.`;
 }
 
 // ═══════════════════════════════════════════════
+//  TALENT INTELLIGENCE REPORT
+// ═══════════════════════════════════════════════
+function checkIntelReady() {
+  const noKey  = document.getElementById('intel-no-key');
+  const noRole = document.getElementById('intel-no-role');
+  const hasKey  = !!getApiKey();
+  const hasRole = !!(document.getElementById('f-role').value.trim() || S.must.length);
+  noKey.style.display  = !hasKey  ? 'block' : 'none';
+  noRole.style.display = hasKey && !hasRole ? 'block' : 'none';
+  document.getElementById('btn-intel-gen').disabled = !hasKey;
+}
+
+async function generateIntelReport() {
+  if (!getApiKey()) { toggleSettings(); return; }
+
+  const role   = document.getElementById('f-role').value.trim()   || 'the role';
+  const expMin = document.getElementById('f-exp-min').value.trim();
+  const expMax = document.getElementById('f-exp-max').value.trim();
+  const expStr = expMin || expMax ? `${expMin||'0'}–${expMax||'∞'} years` : 'not specified';
+  const locs   = S.loc.length ? S.loc.join(', ') : 'India (location not specified)';
+  const must   = [...S.must, ...getManualMust()].join(', ') || 'not specified';
+  const good   = [...S.good, ...S.pref].join(', ')           || 'none';
+  const avoid  = S.avoid.join(', ')                           || 'none';
+
+  const btn = document.getElementById('btn-intel-gen');
+  const status = document.getElementById('intel-status');
+  const output = document.getElementById('intel-output');
+
+  btn.innerHTML = '<span class="ai-spinner"></span> Generating…';
+  btn.disabled  = true;
+  output.style.display = 'none';
+  status.style.display = 'block';
+  status.innerHTML = '<span class="ai-spinner"></span> Gemini is analysing the talent market — usually takes 10–15 seconds…';
+
+  const prompt = `You are a senior talent acquisition consultant with expert knowledge of the Indian job market, including Mumbai, Pune, Bangalore, Hyderabad, and Delhi NCR.
+
+Generate a talent pool intelligence report for a hiring manager. The role details are:
+- Role: ${role}
+- Locations: ${locs}
+- Experience Required: ${expStr}
+- Must-Have Skills/Requirements: ${must}
+- Good-to-Have: ${good}
+- Avoid Profiles: ${avoid}
+
+Return ONLY valid JSON — no markdown code blocks, no explanation text. Use exactly this structure:
+{
+  "market_context": "2–3 sentence paragraph giving an honest overview of talent availability for this role in these locations. Mention if the pool is tight or healthy.",
+  "rows": [
+    {
+      "target_category": "Category name (e.g. SaaS / Cloud Companies)",
+      "companies": "Comma-separated list of 5–8 specific real company names active in India",
+      "estimated_total_pool": 180,
+      "estimated_qualified_pool": 35,
+      "disqualification_reasons": "The main 1–2 reasons why most candidates from this category won't fully meet the strict criteria"
+    }
+  ],
+  "overall_verdict": "GO",
+  "verdict_reason": "One sentence summarising the overall hiring recommendation"
+}
+
+Requirements:
+- Include exactly 4–6 target category rows covering the realistic talent sources for this specific role
+- Use real company names with known India presence — no generic placeholders
+- Pool estimates are for the specified locations only (not nationwide)
+- estimated_total_pool = total people in this category with broadly relevant background
+- estimated_qualified_pool = subset who meet ALL the must-have requirements strictly
+- overall_verdict must be exactly one of: "GO" (qualified pool > 80 across all rows), "CAUTION" (30–80), or "RETHINK" (< 30)
+- Be honest — if the pool is thin, say so clearly`;
+
+  try {
+    const raw = await geminiCall(prompt);
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('Gemini returned an unexpected format. Please try again.');
+    const data = JSON.parse(jsonMatch[0]);
+    renderIntelReport(data, role, locs, expStr);
+    status.style.display = 'none';
+    output.style.display = 'block';
+  } catch(e) {
+    status.innerHTML = '⚠️ ' + e.message;
+  } finally {
+    btn.innerHTML = '🤖 Generate AI Market Report';
+    btn.disabled  = false;
+  }
+}
+
+function renderIntelReport(data, role, locs, expStr) {
+  // Context bar
+  document.getElementById('intel-context-bar').innerHTML = `
+    <div class="icb-item"><div class="icb-label">Role</div><div class="icb-val">${esc(role)}</div></div>
+    <div class="icb-item"><div class="icb-label">Location</div><div class="icb-val">${esc(locs)}</div></div>
+    <div class="icb-item"><div class="icb-label">Experience</div><div class="icb-val">${esc(expStr)}</div></div>
+    <div class="icb-item"><div class="icb-label">Generated</div><div class="icb-val">${new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</div></div>`;
+
+  // Market context
+  const ctxEl = document.getElementById('intel-market-ctx');
+  if (data.market_context) {
+    ctxEl.innerHTML = '<strong>Market Overview:</strong> ' + esc(data.market_context);
+    ctxEl.style.display = 'block';
+  }
+
+  // Table rows
+  const tbody = document.getElementById('intel-tbody');
+  tbody.innerHTML = (data.rows || []).map(row => `
+    <tr>
+      <td class="td-cat" contenteditable="true">${esc(row.target_category||'')}</td>
+      <td class="td-co"  contenteditable="true">${esc(row.companies||'')}</td>
+      <td class="td-num total" contenteditable="true">~${row.estimated_total_pool||0}</td>
+      <td class="td-num qual"  contenteditable="true">~${row.estimated_qualified_pool||0}</td>
+      <td class="td-disq"     contenteditable="true">${esc(row.disqualification_reasons||'')}</td>
+    </tr>`).join('');
+
+  // Verdict
+  const v = (data.overall_verdict||'').toUpperCase();
+  const verdictEl = document.getElementById('intel-verdict');
+  const verdictMap = {
+    'GO':      { cls:'go',      icon:'✅', label:'GO — Healthy Talent Pool' },
+    'CAUTION': { cls:'caution', icon:'⚠️', label:'PROCEED WITH CAUTION' },
+    'RETHINK': { cls:'rethink', icon:'🔴', label:'RETHINK — Tight Pool' },
+  };
+  const vm = verdictMap[v] || verdictMap['CAUTION'];
+  verdictEl.className = 'intel-verdict ' + vm.cls;
+  verdictEl.innerHTML = `<span style="font-size:18px">${vm.icon}</span> <span>${vm.label}${data.verdict_reason ? ' — ' + esc(data.verdict_reason) : ''}</span>`;
+}
+
+function exportIntelPDF() {
+  const role   = document.getElementById('f-role').value.trim() || 'Role';
+  const date   = new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+  const ctxBar = document.getElementById('intel-context-bar').innerHTML;
+  const mktCtx = document.getElementById('intel-market-ctx').innerText || '';
+  const verdict = document.getElementById('intel-verdict').outerHTML;
+
+  // Capture table as static HTML (no contenteditable for print)
+  const rows = [...document.querySelectorAll('#intel-tbody tr')].map(tr => {
+    const cells = [...tr.querySelectorAll('td')].map(td => td.innerText.trim());
+    return `<tr>
+      <td style="font-weight:700">${cells[0]||''}</td>
+      <td>${cells[1]||''}</td>
+      <td style="text-align:center;font-weight:700;color:#3730A3">${cells[2]||''}</td>
+      <td style="text-align:center;font-weight:700;color:#065F46">${cells[3]||''}</td>
+      <td style="font-size:11px;color:#6B7280">${cells[4]||''}</td>
+    </tr>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+<title>Talent Intelligence Report — ${role}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',Arial,sans-serif;color:#1A1A2E;padding:44px 52px;max-width:900px;margin:0 auto}
+  h1{font-size:22px;font-weight:900;letter-spacing:-0.02em;margin-bottom:3px}
+  .sub{font-size:11px;color:#6B7280;margin-bottom:24px}
+  .ctx-bar{display:flex;gap:36px;flex-wrap:wrap;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #E4E7EB}
+  .icb-item .icb-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#9CA3AF;margin-bottom:2px}
+  .icb-item .icb-val{font-size:14px;font-weight:700}
+  .mkt-ctx{background:#EEF0FE;border-left:4px solid #5B6CF6;padding:12px 16px;border-radius:0 8px 8px 0;font-size:12px;line-height:1.7;color:#1A1A2E;margin-bottom:22px}
+  table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:20px}
+  th{padding:9px 12px;text-align:left;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6B7280;border-bottom:2px solid #E4E7EB;background:#F8F9FB;white-space:nowrap}
+  td{padding:10px 12px;border-bottom:1px solid #F3F4F6;vertical-align:top;line-height:1.55}
+  tr:nth-child(even) td{background:#FAFAFA}
+  .verdict{padding:14px 18px;border-radius:9px;font-size:13px;font-weight:700;margin-bottom:16px}
+  .intel-verdict.go{background:#ECFDF5;color:#065F46;border:1px solid #A7F3D0}
+  .intel-verdict.caution{background:#FFFBEB;color:#92400E;border:1px solid #FDE68A}
+  .intel-verdict.rethink{background:#FEF2F2;color:#991B1B;border:1px solid #FECACA}
+  .disclaimer{font-size:10px;color:#9CA3AF;margin-bottom:28px;line-height:1.6}
+  .footer{padding-top:14px;border-top:1px solid #E4E7EB;display:flex;justify-content:space-between;font-size:10px;color:#9CA3AF}
+  @media print{body{padding:20px 28px}@page{margin:1.2cm}}
+</style></head><body>
+  <h1>Talent Intelligence Report</h1>
+  <div class="sub">Prepared using Talent Pool Scout &nbsp;·&nbsp; ${date}</div>
+  <div class="ctx-bar">${ctxBar}</div>
+  ${mktCtx ? `<div class="mkt-ctx"><strong>Market Overview:</strong> ${mktCtx.replace('Market Overview: ','')}</div>` : ''}
+  <table>
+    <thead><tr>
+      <th>Target Category</th><th>Companies</th>
+      <th style="text-align:center">Est. Total Pool</th>
+      <th style="text-align:center">Est. Qualified Pool</th>
+      <th>Primary Disqualification Reasons</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+  ${verdict}
+  <div class="disclaimer">* Pool numbers are AI-generated estimates based on market knowledge. They are directional only and should be verified on LinkedIn Recruiter before sharing with stakeholders.</div>
+  <div class="footer">
+    <span>Generated by Talent Pool Scout</span>
+    <span>https://nitin-gr-dyntrace.github.io/Talent-pool/talent_pool_scout.html</span>
+  </div>
+  <script>window.onload=()=>setTimeout(()=>window.print(),400)<\/script>
+</body></html>`;
+
+  const w = window.open('', '_blank');
+  w.document.write(html);
+  w.document.close();
+}
+
+// ═══════════════════════════════════════════════
 //  STATE & TAG INPUTS
 // ═══════════════════════════════════════════════
 const S = { must:[], good:[], kw:[], loc:[], co:[], pref:[], avoid:[] };
@@ -1991,8 +2325,12 @@ function switchTab(name) {
   if (name==='search') {
     document.querySelector('.tab:nth-child(1)').classList.add('active');
     document.getElementById('pane-search').classList.add('active');
-  } else {
+  } else if (name==='intel') {
     document.querySelector('.tab:nth-child(2)').classList.add('active');
+    document.getElementById('pane-intel').classList.add('active');
+    checkIntelReady();
+  } else {
+    document.querySelector('.tab:nth-child(3)').classList.add('active');
     document.getElementById('pane-history').classList.add('active');
     renderHistory();
   }
