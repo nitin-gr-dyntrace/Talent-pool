@@ -1176,9 +1176,26 @@ function generate() {
     </div>
     <div class="card" style="border-color:#5B6CF6;background:linear-gradient(135deg,#FAFAFE,#F5F4FF)">
       <div class="card-title" style="color:#5B6CF6">📊 Step 2 — Log Your LinkedIn Result</div>
-      <p style="font-size:12px;color:#6B7280;margin-bottom:12px">After running the search, enter the total number of candidates LinkedIn Recruiter shows at the top of the results page.</p>
+      <p style="font-size:12px;color:#6B7280;margin-bottom:12px">Fill in the fields below after running your search, then generate the report for the hiring manager.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#374151;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">LinkedIn Result Count</div>
+          <input type="number" id="result-count" placeholder="e.g. 847" min="0" style="width:100%;padding:8px 12px;border:1.5px solid #E4E7EB;border-radius:8px;font-size:14px;font-weight:700;outline:none" />
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#374151;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Estimated Total Pool</div>
+          <input type="number" id="report-total-pool" placeholder="e.g. 500" min="0" style="width:100%;padding:8px 12px;border:1.5px solid #E4E7EB;border-radius:8px;font-size:14px;font-weight:700;outline:none" />
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#374151;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Estimated Qualified Pool</div>
+          <input type="number" id="report-qual-pool" placeholder="e.g. 120" min="0" style="width:100%;padding:8px 12px;border:1.5px solid #E4E7EB;border-radius:8px;font-size:14px;font-weight:700;outline:none" />
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#374151;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">LinkedIn Search URL <span style="font-weight:400;color:#9CA3AF">(optional)</span></div>
+          <input type="url" id="report-li-url" placeholder="Paste Recruiter search link…" style="width:100%;padding:8px 12px;border:1.5px solid #E4E7EB;border-radius:8px;font-size:12px;outline:none" />
+        </div>
+      </div>
       <div class="log-row">
-        <input type="number" id="result-count" placeholder="e.g. 847" min="0" />
         <button class="btn btn-primary" onclick="logResult()">📊 Log &amp; Assess</button>
       </div>
       <div class="result-signal" id="result-signal"></div>
@@ -1347,11 +1364,14 @@ function renderDashboard() {
 }
 
 function generateReport(count) {
-  const role   = document.getElementById('f-role').value.trim();
-  const expMin = document.getElementById('f-exp-min').value.trim();
-  const expMax = document.getElementById('f-exp-max').value.trim();
-  const date   = new Date().toLocaleDateString('en-IN', {day:'numeric', month:'long', year:'numeric'});
-  const boolStr = buildBoolean();
+  const role      = document.getElementById('f-role').value.trim();
+  const expMin    = document.getElementById('f-exp-min').value.trim();
+  const expMax    = document.getElementById('f-exp-max').value.trim();
+  const totalPool = parseInt(document.getElementById('report-total-pool').value) || 0;
+  const qualPool  = parseInt(document.getElementById('report-qual-pool').value)  || 0;
+  const liUrl     = document.getElementById('report-li-url').value.trim();
+  const date      = new Date().toLocaleDateString('en-IN', {day:'numeric', month:'long', year:'numeric'});
+  const boolStr   = buildBoolean();
 
   let sigLabel, sigColor, sigBg, rec;
   if (count >= 200) {
@@ -1397,6 +1417,12 @@ function generateReport(count) {
     .sec-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#9CA3AF;border-bottom:1px solid #F3F4F6;padding-bottom:6px;margin-bottom:10px;margin-top:22px}
     .bool-pre{background:#1E2035;border-radius:8px;padding:14px 16px;font-family:'Courier New',monospace;font-size:11px;color:#94A3B8;white-space:pre-wrap;word-break:break-word;line-height:1.7}
     .footer{margin-top:40px;padding-top:14px;border-top:1px solid #E4E7EB;display:flex;justify-content:space-between;font-size:10px;color:#9CA3AF}
+    .pool-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:14px 0 24px}
+    .pool-card{border-radius:10px;padding:18px 20px;text-align:center}
+    .pool-card .pc-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;opacity:0.7;margin-bottom:6px}
+    .pool-card .pc-num{font-size:32px;font-weight:900;line-height:1.1}
+    .pool-card .pc-sub{font-size:10px;margin-top:5px;opacity:0.65}
+    .pool-url-row{margin-bottom:20px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
     .chart-section{margin-top:28px}
     .chart-grid{display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:14px;margin-top:12px}
     .chart-box{border:1px solid #E4E7EB;border-radius:8px;padding:14px}
@@ -1425,6 +1451,31 @@ function generateReport(count) {
     ${expMin||expMax?`<div class="kv"><div class="k">Experience</div><div class="v">${expMin||'0'}–${expMax||'∞'} years</div></div>`:''}
     <div class="kv"><div class="k">Date</div><div class="v">${date}</div></div>
   </div>
+
+  ${(totalPool || qualPool) ? `
+  <div class="sec-title">Pool Analysis</div>
+  <div class="pool-grid">
+    <div class="pool-card" style="background:#EEF0FE;color:#3730A3">
+      <div class="pc-label">LinkedIn Results</div>
+      <div class="pc-num">${count.toLocaleString()}</div>
+      <div class="pc-sub">raw search count</div>
+    </div>
+    ${totalPool ? `<div class="pool-card" style="background:#ECFDF5;color:#065F46">
+      <div class="pc-label">Est. Total Pool</div>
+      <div class="pc-num">${totalPool.toLocaleString()}</div>
+      <div class="pc-sub">reachable candidates</div>
+    </div>` : ''}
+    ${qualPool ? `<div class="pool-card" style="background:#FFF7ED;color:#92400E">
+      <div class="pc-label">Est. Qualified Pool</div>
+      <div class="pc-num">${qualPool.toLocaleString()}</div>
+      <div class="pc-sub">${totalPool ? `${Math.round(qualPool/totalPool*100)}% of total pool` : 'qualified candidates'}</div>
+    </div>` : ''}
+  </div>
+  ${liUrl ? `<div class="pool-url-row">
+    <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#9CA3AF">LinkedIn Search URL</span>
+    <a href="${liUrl}" style="font-size:11px;color:#5B6CF6;word-break:break-all">${liUrl}</a>
+  </div>` : ''}
+  ` : ''}
 
   <div class="sec-title">Must-Have Skills</div>
   <div>${tagsHtml(S.must, mustStyle)}</div>
