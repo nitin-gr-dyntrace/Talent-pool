@@ -483,11 +483,11 @@
       </div>
       <div class="key-status" id="key-status-gh" style="display:none"></div>
       <button class="btn-clear-key" id="btn-clear-key-gh" onclick="clearApiKeyGH()">Remove saved token</button>
-      <div class="settings-label" style="margin-top:16px">How to create a GitHub PAT</div>
-      <div class="how-step"><span class="how-num">1</span><span class="how-text">Go to <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a> and click <strong>"Generate new token (classic)"</strong></span></div>
-      <div class="how-step"><span class="how-num">2</span><span class="how-text">Give it a name like <em>Talent Scout</em>. No special scopes needed — leave all checkboxes unchecked.</span></div>
-      <div class="how-step"><span class="how-num">3</span><span class="how-text">Click <strong>"Generate token"</strong>, copy it (starts with <code>ghp_</code>) → paste above → click <strong>Save</strong></span></div>
-      <div class="how-step"><span class="how-num">4</span><span class="how-text">Your Copilot Enterprise licence is linked to your GitHub account — this token gives the tool access to GitHub Models (GPT-4o-mini).</span></div>
+      <div class="settings-label" style="margin-top:16px">How to set up GitHub Models access</div>
+      <div class="how-step"><span class="how-num">1</span><span class="how-text"><strong>Enrol in GitHub Models first</strong> — go to <a href="https://github.com/marketplace/models" target="_blank">github.com/marketplace/models</a>, sign in, and accept access. This is a one-time step.</span></div>
+      <div class="how-step"><span class="how-num">2</span><span class="how-text">Go to <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a> → click <strong>"Generate new token (classic)"</strong></span></div>
+      <div class="how-step"><span class="how-num">3</span><span class="how-text">Give it a name like <em>Talent Scout</em>. Under scopes, tick <strong>"models:read"</strong> (you may need to scroll to find it).</span></div>
+      <div class="how-step"><span class="how-num">4</span><span class="how-text">Click <strong>"Generate token"</strong>, copy it (starts with <code>ghp_</code>) → paste above → click <strong>Save</strong></span></div>
     </div>
 
     <hr class="settings-divider" />
@@ -1378,8 +1378,8 @@ async function geminiCall(prompt) {
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       const msg = err?.error?.message || `GitHub Models error ${res.status}`;
-      if (res.status === 401) throw new Error('Invalid GitHub token. Check your PAT in ⚙️ AI Settings.');
-      if (res.status === 403) throw new Error('Token lacks access to GitHub Models. Ensure your PAT has the right permissions.');
+      if (res.status === 401) throw new Error('GitHub token rejected (401). Make sure: (1) you visited github.com/marketplace/models and accepted access, (2) your PAT has the "models:read" scope selected when you created it.');
+      if (res.status === 403) throw new Error('Token does not have GitHub Models access (403). Go to github.com/marketplace/models to enrol, then regenerate your PAT with the "models:read" scope.');
       throw new Error(msg);
     }
     const data = await res.json();
